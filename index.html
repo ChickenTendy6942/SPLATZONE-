@@ -2911,5 +2911,15 @@ Casual PC gamer who wants an instantly-playable browser battle royale demo, pote
 (function(){
   const TH = window.THREE;
   const NAMES = ['Vex','Ronin','Nyx','Kai','Zara','Ash','Rook','Ember','Fenix','Ghost','Onyx','Rex','Sable','Talon','Wraith','Jinx','Kobalt','Mira','Nova','Orion','Piper','Quill','Reyna','Slate','Tundra','Vega','Wren','Xena','Yara','Zenith'];
-
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="./src/util.js"></script>   <!-- moved here, must be first -->
+<script src="./src/audio.js"></script>  <!-- was first before — that was the bug -->
+<script src="./src/world.js"></script>
+<script src="./src/weapons.js"></script>
+<script src="./src/player.js"></script>
+<script src="./src/bots.js"></script>
+<script src="./src/building.js"></script>
+<script src="./src/storm.js"></script>
+<script src="./src/ui.js"></script>
+<script src="./src/game.js"></script>
  
