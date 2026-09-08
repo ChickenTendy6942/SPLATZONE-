@@ -1013,7 +1013,7 @@ document.getElementById('gameCanvas').addEventListener('mousedown', e=>{
 window.addEventListener('mouseup', e=>{
   if(e.button!==0) return;
   isMouseDown = false;
-  player.semiFired = false;
+  if(player) player.semiFired = false;
 });
 function switchGun(key){
   if(player.gunKey===key) return;
@@ -1029,11 +1029,11 @@ function startMatch(mapKey){
   clockEl.menu.style.display = 'none';
   buildScene(mapKey);
   buildGunViewmodel();
-  updateGunViewmodel();
   zonePhases = buildZonePhases(currentMap.radius);
   matchElapsed = 0;
   killCount = 0;
   spawnEntities();
+  updateGunViewmodel();
 
   renderer = new THREE.WebGLRenderer({canvas:document.getElementById('gameCanvas'), antialias:true});
   renderer.setSize(window.innerWidth, window.innerHeight);
