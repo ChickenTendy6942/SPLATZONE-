@@ -466,6 +466,10 @@ let entities = []; // index 0 = player
 let player;
 let killCount = 0;
 let tracers = [];
+let projectiles = [];
+const PAINT_COLORS = [0xff2d78, 0x2de6ff, 0xc6ff2d, 0xffb03d, 0xd88bff];
+const PAINTBALL_SPEED = 85; // units/sec - fast, but still trackable by eye
+const PLAYER_HIT_RADIUS = 0.5;
 let audioCtx = null;
 
 const clockEl = {
@@ -716,17 +720,39 @@ function hasLineOfSight(fromPos, toPos){
    ============================================================ */
 function makeBotMesh(hue){
   const group = new THREE.Group();
+  const teamColor = new THREE.Color().setHSL(hue, 0.65, 0.55);
+
+  // invisible capsule = the actual hit collider used for raycasting (unchanged hitbox)
   const bodyGeo = new THREE.CapsuleGeometry(BOT_RADIUS, 1.0, 4, 8);
-  const color = new THREE.Color().setHSL(hue, 0.65, 0.55);
-  const bodyMat = new THREE.MeshLambertMaterial({color});
+  const bodyMat = new THREE.MeshBasicMaterial({color:teamColor, transparent:true, opacity:0, depthWrite:false});
   const body = new THREE.Mesh(bodyGeo, bodyMat);
   body.position.y = BOT_RADIUS + 0.5;
   group.add(body);
-  const headGeo = new THREE.SphereGeometry(0.28,10,10);
+
+  // visible head (also a hit target)
+  const headGeo = new THREE.SphereGeometry(0.2,10,10);
   const headMat = new THREE.MeshLambertMaterial({color:0xffe0c2});
   const head = new THREE.Mesh(headGeo, headMat);
-  head.position.y = BOT_RADIUS*2 + 1.0 + 0.15;
+  head.position.y = 1.68;
   group.add(head);
+
+  // ---- cosmetic mannequin parts (not hit targets, just the visible silhouette) ----
+  const limbMat = new THREE.MeshLambertMaterial({color:0x4a4a55});
+  const legMat = new THREE.MeshLambertMaterial({color:0x2f2f38});
+  const vestMat = new THREE.MeshLambertMaterial({color:teamColor});
+
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.46,0.62,0.28), vestMat);
+  torso.position.y = 1.2;
+  group.add(torso);
+
+  const armGeo = new THREE.CylinderGeometry(0.07,0.07,0.56,8);
+  const armL = new THREE.Mesh(armGeo, limbMat); armL.position.set(-0.32,1.16,0); group.add(armL);
+  const armR = new THREE.Mesh(armGeo, limbMat); armR.position.set(0.32,1.16,0); group.add(armR);
+
+  const legGeo = new THREE.CylinderGeometry(0.095,0.095,0.78,8);
+  const legL = new THREE.Mesh(legGeo, legMat); legL.position.set(-0.13,0.39,0); group.add(legL);
+  const legR = new THREE.Mesh(legGeo, legMat); legR.position.set(0.13,0.39,0); group.add(legR);
+
   return {group, body, head};
 }
 
@@ -742,6 +768,8 @@ function randomSpawnPoint(radius){
 
 function spawnEntities(){
   entities = [];
+  projectiles = [];
+  tracers = [];
   const spawnP = randomSpawnPoint(currentMap.radius);
   camera.position.set(spawnP.x, 1.6, spawnP.z);
 
@@ -856,33 +884,117 @@ function playerFire(){
   const baseDir = new THREE.Vector3();
   camera.getWorldDirection(baseDir);
 
-  let hitSomething = false;
-  const aliveBotMeshes = entities.filter(e=>!e.isPlayer && e.alive).flatMap(e=>[e.body, e.head]);
-
   for(let p=0;p<g.pellets;p++){
     const dir = getSpreadDir(baseDir, g.spread);
-    const ray = new THREE.Raycaster(origin, dir, 0.05, g.range);
-    const allTargets = aliveBotMeshes.concat(obstacleMeshes);
-    const hits = ray.intersectObjects(allTargets, false);
-    let endPoint = origin.clone().add(dir.clone().multiplyScalar(g.range));
-    if(hits.length>0){
-      const hit = hits[0];
-      endPoint = hit.point;
-      const ref = hit.object.userData.entityRef;
-      if(ref){
-        ref.health -= g.dmg;
-        ref.lastDamagedBy = player;
-        hitSomething = true;
-        if(ref.health <= 0 && ref.alive){
-          killEntity(ref, player);
-        }
-      }
-    }
-    spawnTracer(origin, endPoint, 0x9de8ff);
+    const color = PAINT_COLORS[Math.floor(Math.random()*PAINT_COLORS.length)];
+    spawnProjectile(origin, dir, g.dmg, g.range, player, color);
   }
-  if(hitSomething){ sfxHit(); showHitmarker(); }
 
   if(player.ammo[player.gunKey] <= 0) startReload();
+}
+
+function buildPaintballMesh(color){
+  const geo = new THREE.SphereGeometry(0.14, 8, 8);
+  const mat = new THREE.MeshBasicMaterial({color});
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+  return mesh;
+}
+
+function spawnProjectile(origin, dir, damage, range, ownerRef, color){
+  const mesh = buildPaintballMesh(color);
+  mesh.position.copy(origin);
+  projectiles.push({
+    pos: origin.clone(),
+    dir: dir.clone().normalize(),
+    damage, ownerRef, maxDist: range, traveled: 0, mesh, color
+  });
+}
+
+function spawnImpactFlash(point, color){
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({color, transparent:true, opacity:1, depthTest:false}));
+  spr.position.copy(point);
+  spr.scale.set(0.05,0.05,0.05);
+  scene.add(spr);
+  const start = performance.now();
+  const dur = 170;
+  function step(){
+    const t = Math.min((performance.now()-start)/dur, 1);
+    const s = 0.05 + t*0.55;
+    spr.scale.set(s,s,s);
+    spr.material.opacity = 1-t;
+    if(t<1) requestAnimationFrame(step);
+    else { scene.remove(spr); spr.material.dispose(); }
+  }
+  requestAnimationFrame(step);
+}
+
+function removeProjectile(i){
+  const pr = projectiles[i];
+  scene.remove(pr.mesh);
+  pr.mesh.geometry.dispose();
+  pr.mesh.material.dispose();
+  projectiles.splice(i,1);
+}
+
+function updateProjectiles(dt){
+  for(let i=projectiles.length-1;i>=0;i--){
+    const pr = projectiles[i];
+    const moveDist = PAINTBALL_SPEED*dt;
+    let hitDist = moveDist;
+    let hitRef = null;
+    let hitPoint = null;
+
+    const targets = obstacleMeshes.concat(
+      entities.filter(e=>!e.isPlayer && e.alive && e!==pr.ownerRef).flatMap(e=>[e.body,e.head])
+    );
+    if(targets.length>0){
+      const ray = new THREE.Raycaster(pr.pos, pr.dir, 0, moveDist);
+      const hits = ray.intersectObjects(targets, false);
+      if(hits.length>0 && hits[0].distance <= hitDist){
+        hitDist = hits[0].distance;
+        hitPoint = hits[0].point.clone();
+        hitRef = hits[0].object.userData.entityRef || null;
+      }
+    }
+
+    if(pr.ownerRef !== player && player.alive){
+      const playerPos = new THREE.Vector3(); camera.getWorldPosition(playerPos);
+      const toPlayer = playerPos.clone().sub(pr.pos);
+      const projLen = toPlayer.dot(pr.dir);
+      const closestT = Math.max(0, Math.min(moveDist, projLen));
+      const closestPoint = pr.pos.clone().add(pr.dir.clone().multiplyScalar(closestT));
+      const dist = closestPoint.distanceTo(playerPos);
+      if(dist < PLAYER_HIT_RADIUS && closestT < hitDist){
+        hitDist = closestT;
+        hitPoint = closestPoint;
+        hitRef = player;
+      }
+    }
+
+    if(hitPoint){
+      pr.mesh.position.copy(hitPoint);
+      if(hitRef){
+        hitRef.health -= pr.damage;
+        hitRef.lastDamagedBy = pr.ownerRef;
+        if(hitRef.isPlayer){ flashDamage(); sfxHurt(); }
+        if(pr.ownerRef===player){ sfxHit(); showHitmarker(); }
+        if(hitRef.health<=0 && hitRef.alive) killEntity(hitRef, pr.ownerRef);
+      }
+      spawnImpactFlash(hitPoint, pr.color);
+      removeProjectile(i);
+      continue;
+    }
+
+    const prevPos = pr.pos.clone();
+    pr.pos.add(pr.dir.clone().multiplyScalar(moveDist));
+    pr.mesh.position.copy(pr.pos);
+    spawnTracer(prevPos, pr.pos, pr.color);
+    pr.traveled += moveDist;
+    if(pr.traveled >= pr.maxDist || Math.hypot(pr.pos.x,pr.pos.z) > currentMap.radius*2.4){
+      removeProjectile(i);
+    }
+  }
 }
 
 function startReload(){
@@ -973,18 +1085,13 @@ function updateBot(bot, dt, zoneR){
     const effectiveFireRate = g.fireRate * diff.fireRateMult;
     if(dist <= g.range && now - bot.lastShot >= effectiveFireRate){
       bot.lastShot = now;
-      let hitChance = (1 - (dist/g.range)*0.55 - g.spread*1.5) * diff.hitMult;
-      hitChance = Math.max(0.08, Math.min(0.92, hitChance));
-      const eyeA = myPos.clone().add(new THREE.Vector3(0,1.2,0));
+      const eyeA = myPos.clone().add(new THREE.Vector3(0,1.25,0));
       const eyeB = botAimPoint(target);
-      spawnTracer(eyeA, eyeB, 0xff5d5d);
-      if(Math.random() < hitChance){
-        const dmg = g.dmg * (g.pellets>1 ? Math.ceil(g.pellets*0.5) : 1) * diff.dmgMult;
-        target.health -= dmg;
-        target.lastDamagedBy = bot;
-        if(target.isPlayer){ flashDamage(); sfxHurt(); }
-        if(target.health <= 0 && target.alive){ killEntity(target, bot); }
-      }
+      const aimDir = eyeB.clone().sub(eyeA).normalize();
+      const effectiveSpread = g.spread * THREE.MathUtils.clamp(1.3/diff.hitMult, 0.3, 2.6);
+      const dir = getSpreadDir(aimDir, effectiveSpread);
+      const color = PAINT_COLORS[Math.floor(Math.random()*PAINT_COLORS.length)];
+      spawnProjectile(eyeA, dir, g.dmg*diff.dmgMult, g.range, bot, color);
     }
   } else {
     // wander -- bias toward zone center if outside zone
@@ -1055,7 +1162,7 @@ window.addEventListener('keydown', e=>{
   }
 });
 window.addEventListener('keyup', e=>{ keys[e.code]=false; });
-document.getElementById('gameCanvas').addEventListener('mousedown', e=>{
+document.addEventListener('mousedown', e=>{
   if(e.button!==0) return;
   isMouseDown = true;
   ensureAudio();
@@ -1350,6 +1457,7 @@ function animate(){
       }
     }
 
+    updateProjectiles(dt);
     updateTracers();
     updateHUD(zoneState);
     drawMinimap(zr);
