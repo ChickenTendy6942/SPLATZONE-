@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPLATZONE // Paintball Battle Royale</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -196,6 +197,52 @@
   #fatalError p{margin-bottom:10px; line-height:1.6; max-width:640px;}
   #fatalError code{background:#3a1a1a; padding:2px 6px; border-radius:4px;}
   #fatalErrorList{margin-top:18px; font-family:monospace; font-size:12.5px; color:#ff9d9d; white-space:pre-wrap;}
+
+  /* ---------- LOBBY ---------- */
+  .lobbyPanel{background:linear-gradient(135deg, rgba(255,45,120,.08), rgba(45,230,255,.08)), var(--panel);}
+  .lobbyRow{display:flex; gap:22px; flex-wrap:wrap; align-items:center;}
+  .lobbyPreviewWrap{width:220px; height:220px; border-radius:10px; overflow:hidden; background:radial-gradient(circle at 50% 30%, #26263a, #0f0f16); border:1px solid var(--line); flex-shrink:0;}
+  #lobbyCanvas{width:100%; height:100%; display:block;}
+  .lobbyInfo{flex:1; min-width:220px;}
+  #coinDisplay{font-family:'Archivo Black'; font-size:24px; color:#ffd54d; margin-bottom:10px;}
+  .equippedLine{font-size:13px; color:#c8c8d8; margin-bottom:4px;}
+  .equippedLine b{color:var(--cyan);}
+  .lobbyBtn{
+    display:inline-block; margin-top:10px; background:linear-gradient(90deg,var(--cyan),#4d7bff);
+    border:none; color:#0c0c12; font-family:'Archivo Black'; font-size:13px; letter-spacing:.5px;
+    padding:10px 20px; border-radius:6px; cursor:pointer;
+  }
+  .lobbyBtn.secondary{background:#fff; color:#3c4043;}
+  #profileArea{margin-top:14px;}
+  #googleSetupNote{display:none; font-size:11px; color:#77778a; margin-top:8px; max-width:340px; line-height:1.5;}
+  #profileSignedIn{display:flex; align-items:center; gap:10px;}
+  #profilePicImg{width:34px; height:34px; border-radius:50%; border:2px solid var(--cyan);}
+  #profileNameText{font-size:13.5px; font-weight:800;}
+
+  /* ---------- SHOP ---------- */
+  #shopScreen{
+    display:none; position:fixed; inset:0; z-index:55; background:var(--bg); overflow-y:auto;
+  }
+  .shopWrap{max-width:820px; margin:0 auto; padding:40px 24px;}
+  .shopHeader{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .shopHeader h1{font-size:40px; background:linear-gradient(90deg,var(--pink),var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  #shopCoinDisplay{font-family:'Archivo Black'; font-size:22px; color:#ffd54d;}
+  .shopSectionTitle{font-size:14px; letter-spacing:.5px; color:#c8c8d8; margin:26px 0 12px;}
+  .shopGrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px;}
+  .shopItem{
+    background:var(--panel); border:2px solid var(--line); border-radius:10px; padding:14px; text-align:center;
+  }
+  .shopItem.owned{border-color:var(--cyan);}
+  .shopItem.equipped{border-color:var(--lime); box-shadow:0 0 0 1px var(--lime);}
+  .shopSwatch{width:100%; height:60px; border-radius:8px; margin-bottom:10px;}
+  .shopItem b{display:block; font-size:13.5px; margin-bottom:4px;}
+  .shopItem .cost{font-size:12px; color:#ffd54d; margin-bottom:8px;}
+  .shopItem button{
+    width:100%; border:none; border-radius:6px; padding:8px; font-family:'Archivo Black'; font-size:11.5px;
+    cursor:pointer; background:linear-gradient(90deg,var(--pink),#ff6b3d); color:#fff;
+  }
+  .shopItem button:disabled{opacity:.5; cursor:not-allowed;}
+  .shopItem button.equippedBtn{background:var(--lime); color:#0c0c12;}
 </style>
 </head>
 <body>
@@ -216,6 +263,32 @@
     <div class="titleBlock">
       <h1>SPLATZONE</h1>
       <p>Last paintballer standing wins. The fog closes in — don't get caught outside it.</p>
+    </div>
+
+    <div class="panel lobbyPanel">
+      <h2>YOUR LOBBY</h2>
+      <div class="lobbyRow">
+        <div class="lobbyPreviewWrap">
+          <canvas id="lobbyCanvas"></canvas>
+        </div>
+        <div class="lobbyInfo">
+          <div id="coinDisplay">🪙 <span id="coinAmount">0</span></div>
+          <div class="equippedLine">Skin: <b id="equippedSkinName">Crimson</b></div>
+          <div class="equippedLine">Gun rig: <b id="equippedGunName">Stock</b></div>
+          <button id="openShopBtn" class="lobbyBtn">OPEN SHOP</button>
+
+          <div id="profileArea">
+            <div id="profileSignedOut">
+              <button id="googleSignInBtn" class="lobbyBtn secondary">SIGN IN WITH GOOGLE</button>
+              <div id="googleSetupNote">Sign-in needs a one-time setup by whoever owns this game (a free Google Client ID). Ask them, or see the comment near <code>GOOGLE_CLIENT_ID</code> in the code. Progress always saves to this browser either way.</div>
+            </div>
+            <div id="profileSignedIn" style="display:none;">
+              <img id="profilePicImg" alt="">
+              <span id="profileNameText"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="panel">
@@ -262,6 +335,20 @@
       </div>
       <p class="hint">100 HP · 8 players · match lasts ~3–4 minutes · jump, slide and mantle to move around cover fast</p>
     </div>
+  </div>
+</div>
+
+<div id="shopScreen">
+  <div class="shopWrap">
+    <div class="shopHeader">
+      <h1 class="display">SHOP</h1>
+      <div id="shopCoinDisplay">🪙 <span id="shopCoinAmount">0</span></div>
+    </div>
+    <h2 class="shopSectionTitle">CHARACTER SKINS</h2>
+    <div id="skinShopList" class="shopGrid"></div>
+    <h2 class="shopSectionTitle">GUN RIGS</h2>
+    <div id="gunShopList" class="shopGrid"></div>
+    <button id="closeShopBtn" class="lobbyBtn" style="margin-top:24px;">BACK TO LOBBY</button>
   </div>
 </div>
 
@@ -317,6 +404,7 @@
     <div class="statBox"><b id="statTime">0:00</b><span>TIME SURVIVED</span></div>
     <div class="statBox"><b id="statKills">0</b><span>ELIMINATIONS</span></div>
     <div class="statBox"><b id="statPlace">-</b><span>PLACEMENT</span></div>
+    <div class="statBox"><b id="statCoins" style="color:#ffd54d;">+0</b><span>COINS EARNED</span></div>
   </div>
   <button id="playAgainBtn">PLAY AGAIN</button>
 </div>
@@ -385,36 +473,79 @@ const DIFFICULTY_SETTINGS = [
 ];
 let selectedDifficulty = 2; // 1-4
 
+const SKINS = [
+  {id:'crimson', name:'Crimson',  color:0xff3b5c, cost:0},
+  {id:'aqua',    name:'Aqua',     color:0x2de6ff, cost:150},
+  {id:'lime',    name:'Lime',     color:0xc6ff2d, cost:150},
+  {id:'sunset',  name:'Sunset',   color:0xff9d3d, cost:250},
+  {id:'violet',  name:'Violet',   color:0xb14dff, cost:250},
+  {id:'gold',    name:'Gilded',   color:0xffd54d, cost:500}
+];
+const GUN_SKINS = [
+  {id:'stock',    name:'Stock',       color:0x2c2f36, cost:0},
+  {id:'cyan',     name:'Cyan Rig',    color:0x1fb6c9, cost:150},
+  {id:'magenta',  name:'Magenta Rig', color:0xd6317e, cost:150},
+  {id:'gold',     name:'Gold Rig',    color:0xb8892b, cost:400}
+];
+
+const SAVE_KEY = 'splatzone_save_v1';
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return Object.assign({
+        coins:0, ownedSkins:['crimson'], ownedGuns:['stock'],
+        equippedSkin:'crimson', equippedGun:'stock',
+        profileName:null, profilePic:null
+      }, parsed);
+    }
+  }catch(e){}
+  return { coins:0, ownedSkins:['crimson'], ownedGuns:['stock'], equippedSkin:'crimson', equippedGun:'stock', profileName:null, profilePic:null };
+}
+function saveGame(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+}
+let save = loadSave();
+function getEquippedSkinColor(){
+  const s = SKINS.find(x=>x.id===save.equippedSkin) || SKINS[0];
+  return s.color;
+}
+function getEquippedGunColor(){
+  const g = GUN_SKINS.find(x=>x.id===save.equippedGun) || GUN_SKINS[0];
+  return g.color;
+}
+
 const MAPS = {
   sandlot: {
     name:'Sandlot Arena', radius:55,
-    sky:0xbfe3ff, fog:0xbfe3ff, ground:0xc2a878, grid:0x9c8258,
-    ambient:0xfff2d8, ambientI:0.75, sunI:0.9,
+    sky:0x8fd8ff, fog:0x8fd8ff, ground:0xe8c98a, grid:0xd9a95c,
+    ambient:0xffffff, ambientI:0.95, sunI:1.15,
     boxes:[
-      {x:10,z:5,w:4,d:4,h:3,c:0xC97C3D},{x:-12,z:8,w:5,d:3,h:2.5,c:0xB5652E},
-      {x:18,z:-14,w:3,d:6,h:3,c:0xC97C3D},{x:-20,z:-10,w:6,d:3,h:2,c:0xA85A2A},
-      {x:0,z:20,w:9,d:2,h:3,c:0x8C5A2B},{x:0,z:-20,w:9,d:2,h:3,c:0x8C5A2B},
-      {x:23,z:0,w:2,d:9,h:3,c:0x8C5A2B},{x:-23,z:0,w:2,d:9,h:3,c:0x8C5A2B},
-      {x:6,z:-6,w:3,d:3,h:2,c:0xC97C3D},{x:-6,z:6,w:3,d:3,h:2,c:0xC97C3D},
-      {x:14,z:14,w:4,d:4,h:2.5,c:0xB5652E},{x:-15,z:-16,w:4,d:4,h:2.5,c:0xB5652E},
-      {x:28,z:20,w:3,d:3,h:2,c:0xA85A2A},{x:-28,z:18,w:3,d:3,h:2,c:0xA85A2A},
-      {x:30,z:-22,w:3,d:3,h:2,c:0xA85A2A},{x:-30,z:-20,w:3,d:3,h:2,c:0xA85A2A}
+      {x:10,z:5,w:4,d:4,h:3,c:0xff9d3d},{x:-12,z:8,w:5,d:3,h:2.5,c:0xff6b4d},
+      {x:18,z:-14,w:3,d:6,h:3,c:0xffb03d},{x:-20,z:-10,w:6,d:3,h:2,c:0xff8659},
+      {x:0,z:20,w:9,d:2,h:3,c:0xffcf5c},{x:0,z:-20,w:9,d:2,h:3,c:0xffcf5c},
+      {x:23,z:0,w:2,d:9,h:3,c:0xffcf5c},{x:-23,z:0,w:2,d:9,h:3,c:0xffcf5c},
+      {x:6,z:-6,w:3,d:3,h:2,c:0xff9d3d},{x:-6,z:6,w:3,d:3,h:2,c:0xff9d3d},
+      {x:14,z:14,w:4,d:4,h:2.5,c:0xff6b4d},{x:-15,z:-16,w:4,d:4,h:2.5,c:0xff6b4d},
+      {x:28,z:20,w:3,d:3,h:2,c:0xff8659},{x:-28,z:18,w:3,d:3,h:2,c:0xff8659},
+      {x:30,z:-22,w:3,d:3,h:2,c:0xff8659},{x:-30,z:-20,w:3,d:3,h:2,c:0xff8659}
     ],
     pillarRing:null
   },
   ruins: {
     name:'Ashfall Ruins', radius:50,
-    sky:0x352c3c, fog:0x352c3c, ground:0x4a4550, grid:0x33303a,
-    ambient:0x8fa0ff, ambientI:0.55, sunI:0.5,
+    sky:0xffb6c9, fog:0xffb6c9, ground:0xc9a0d9, grid:0xa878c2,
+    ambient:0xffe8ff, ambientI:0.85, sunI:0.9,
     boxes:[
-      {x:8,z:0,w:3,d:2,h:1.5,c:0x5c5666},{x:-8,z:0,w:3,d:2,h:1.5,c:0x5c5666},
-      {x:0,z:8,w:2,d:3,h:1.5,c:0x5c5666},{x:0,z:-8,w:2,d:3,h:1.5,c:0x5c5666},
-      {x:25,z:15,w:4,d:4,h:2.5,c:0x504a5a},{x:-25,z:15,w:4,d:4,h:2.5,c:0x504a5a},
-      {x:25,z:-15,w:4,d:4,h:2.5,c:0x504a5a},{x:-25,z:-15,w:4,d:4,h:2.5,c:0x504a5a},
-      {x:35,z:0,w:3,d:3,h:2,c:0x453f4d},{x:-35,z:0,w:3,d:3,h:2,c:0x453f4d},
-      {x:0,z:35,w:3,d:3,h:2,c:0x453f4d},{x:0,z:-35,w:3,d:3,h:2,c:0x453f4d}
+      {x:8,z:0,w:3,d:2,h:1.5,c:0xb28ad1},{x:-8,z:0,w:3,d:2,h:1.5,c:0xb28ad1},
+      {x:0,z:8,w:2,d:3,h:1.5,c:0xb28ad1},{x:0,z:-8,w:2,d:3,h:1.5,c:0xb28ad1},
+      {x:25,z:15,w:4,d:4,h:2.5,c:0xe088a8},{x:-25,z:15,w:4,d:4,h:2.5,c:0xe088a8},
+      {x:25,z:-15,w:4,d:4,h:2.5,c:0xe088a8},{x:-25,z:-15,w:4,d:4,h:2.5,c:0xe088a8},
+      {x:35,z:0,w:3,d:3,h:2,c:0x9d7ad9},{x:-35,z:0,w:3,d:3,h:2,c:0x9d7ad9},
+      {x:0,z:35,w:3,d:3,h:2,c:0x9d7ad9},{x:0,z:-35,w:3,d:3,h:2,c:0x9d7ad9}
     ],
-    pillarRing:{count:8, radius:18, pRadius:1.2, height:7, c:0x6b6570}
+    pillarRing:{count:8, radius:18, pRadius:1.2, height:7, c:0xd48ecf}
   }
 };
 
@@ -718,42 +849,52 @@ function hasLineOfSight(fromPos, toPos){
 /* ============================================================
    ENTITIES (player + bots)
    ============================================================ */
-function makeBotMesh(hue){
+function buildMannequinVisual(vestColorHex){
   const group = new THREE.Group();
-  const teamColor = new THREE.Color().setHSL(hue, 0.65, 0.55);
-
-  // invisible capsule = the actual hit collider used for raycasting (unchanged hitbox)
-  const bodyGeo = new THREE.CapsuleGeometry(BOT_RADIUS, 1.0, 4, 8);
-  const bodyMat = new THREE.MeshBasicMaterial({color:teamColor, transparent:true, opacity:0, depthWrite:false});
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = BOT_RADIUS + 0.5;
-  group.add(body);
-
-  // visible head (also a hit target)
-  const headGeo = new THREE.SphereGeometry(0.2,10,10);
+  const limbMat = new THREE.MeshLambertMaterial({color:0x5a5a68});
+  const legMat = new THREE.MeshLambertMaterial({color:0x33333e});
+  const vestMat = new THREE.MeshLambertMaterial({color:vestColorHex});
   const headMat = new THREE.MeshLambertMaterial({color:0xffe0c2});
-  const head = new THREE.Mesh(headGeo, headMat);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2,10,10), headMat);
   head.position.y = 1.68;
   group.add(head);
-
-  // ---- cosmetic mannequin parts (not hit targets, just the visible silhouette) ----
-  const limbMat = new THREE.MeshLambertMaterial({color:0x4a4a55});
-  const legMat = new THREE.MeshLambertMaterial({color:0x2f2f38});
-  const vestMat = new THREE.MeshLambertMaterial({color:teamColor});
 
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.46,0.62,0.28), vestMat);
   torso.position.y = 1.2;
   group.add(torso);
 
+  function limb(geo, mat, x, pivotY, hangLen){
+    const pivot = new THREE.Group();
+    pivot.position.set(x, pivotY, 0);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.y = -hangLen/2;
+    pivot.add(mesh);
+    group.add(pivot);
+    return pivot;
+  }
   const armGeo = new THREE.CylinderGeometry(0.07,0.07,0.56,8);
-  const armL = new THREE.Mesh(armGeo, limbMat); armL.position.set(-0.32,1.16,0); group.add(armL);
-  const armR = new THREE.Mesh(armGeo, limbMat); armR.position.set(0.32,1.16,0); group.add(armR);
-
   const legGeo = new THREE.CylinderGeometry(0.095,0.095,0.78,8);
-  const legL = new THREE.Mesh(legGeo, legMat); legL.position.set(-0.13,0.39,0); group.add(legL);
-  const legR = new THREE.Mesh(legGeo, legMat); legR.position.set(0.13,0.39,0); group.add(legR);
+  const armL = limb(armGeo, limbMat, -0.32, 1.42, 0.56);
+  const armR = limb(armGeo, limbMat, 0.32, 1.42, 0.56);
+  const legL = limb(legGeo, legMat, -0.13, 0.85, 0.78);
+  const legR = limb(legGeo, legMat, 0.13, 0.85, 0.78);
 
-  return {group, body, head};
+  return {group, head, torso, armL, armR, legL, legR, vestMat};
+}
+
+function makeBotMesh(hue){
+  const teamColor = new THREE.Color().setHSL(hue, 0.75, 0.62);
+  const visual = buildMannequinVisual(teamColor);
+
+  // invisible capsule = the actual hit collider used for raycasting (unchanged hitbox)
+  const bodyGeo = new THREE.CapsuleGeometry(BOT_RADIUS, 1.0, 4, 8);
+  const bodyMat = new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false});
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = BOT_RADIUS + 0.5;
+  visual.group.add(body);
+
+  return {group:visual.group, body, head:visual.head, armL:visual.armL, armR:visual.armR, legL:visual.legL, legR:visual.legR};
 }
 
 function randomSpawnPoint(radius){
@@ -802,6 +943,8 @@ function spawnEntities(){
       isPlayer:false, alive:true, health:100,
       gunKey, lastShot: performance.now() + Math.random()*1000,
       mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
+      limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
+      animPhase: Math.random()*10,
       wanderTarget:null, name:'BOT '+(i+1), kills:0,
       lastDamagedBy:null
     };
@@ -831,8 +974,7 @@ function buildGunViewmodel(){
   gunMesh.add(muzzleFlash);
 }
 function updateGunViewmodel(){
-  const g = GUNS[player.gunKey];
-  gunMesh.userData.box.material.color.setHex(g.color);
+  gunMesh.userData.box.material.color.setHex(getEquippedGunColor());
   const scaleZ = 0.7;
   gunMesh.userData.box.scale.z = scaleZ/0.55;
 }
@@ -886,8 +1028,7 @@ function playerFire(){
 
   for(let p=0;p<g.pellets;p++){
     const dir = getSpreadDir(baseDir, g.spread);
-    const color = PAINT_COLORS[Math.floor(Math.random()*PAINT_COLORS.length)];
-    spawnProjectile(origin, dir, g.dmg, g.range, player, color);
+    spawnProjectile(origin, dir, g.dmg, g.range, player, getEquippedGunColor());
   }
 
   if(player.ammo[player.gunKey] <= 0) startReload();
@@ -1119,7 +1260,15 @@ function updateBot(bot, dt, zoneR){
     const dx = moveDir.x*BOT_SPEED*dt, dz = moveDir.z*BOT_SPEED*dt;
     const moved = tryMove(myPos, dx, dz, BOT_RADIUS, currentMap.radius*1.5);
     if(!moved) bot.wanderTarget = null;
+    bot.animPhase += dt*8;
+  } else {
+    bot.animPhase += dt*2; // slow idle sway instead of a hard freeze
   }
+  const swing = Math.sin(bot.animPhase) * (moveDir ? 0.55 : 0.06);
+  bot.limbs.legL.rotation.x = swing;
+  bot.limbs.legR.rotation.x = -swing;
+  bot.limbs.armL.rotation.x = -swing*0.85;
+  bot.limbs.armR.rotation.x = swing*0.85;
 
   updateNameSprite(bot.nameTag, bot.name, Math.max(bot.health,0)/100);
 }
@@ -1223,6 +1372,7 @@ function handleSlide(){
    MATCH FLOW
    ============================================================ */
 function startMatch(mapKey){
+  lobbyActive = false;
   clockEl.menu.style.display = 'none';
   buildScene(mapKey);
   buildGunViewmodel();
@@ -1296,6 +1446,12 @@ function endMatch(won, killer){
   document.getElementById('statTime').textContent = formatTime(matchElapsed);
   document.getElementById('statKills').textContent = player.kills;
   document.getElementById('statPlace').textContent = won ? '#1' : ('#'+(botsStillAlive+1));
+
+  const coinsEarned = 20 + player.kills*10 + (won ? 75 : 0);
+  save.coins += coinsEarned;
+  saveGame();
+  const coinEl = document.getElementById('statCoins');
+  if(coinEl) coinEl.textContent = '+'+coinsEarned;
 }
 
 function formatTime(s){
@@ -1472,6 +1628,188 @@ function animate(){
 
   renderer.render(scene, camera);
 }
+
+/* ============================================================
+   LOBBY PREVIEW (small standalone scene, independent of the match)
+   ============================================================ */
+let lobbyScene, lobbyCamera, lobbyRenderer, lobbyMannequin, lobbyActive = true;
+function initLobbyScene(){
+  const canvas = document.getElementById('lobbyCanvas');
+  lobbyRenderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  lobbyRenderer.setSize(220,220,false);
+  lobbyRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  lobbyScene = new THREE.Scene();
+  lobbyCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
+  lobbyCamera.position.set(0, 1.35, 3.4);
+  lobbyCamera.lookAt(0,1.1,0);
+  lobbyScene.add(new THREE.HemisphereLight(0xffffff, 0x22223a, 1.15));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(2,4,3);
+  lobbyScene.add(sun);
+  rebuildLobbyMannequin();
+  requestAnimationFrame(animateLobby);
+}
+function rebuildLobbyMannequin(){
+  if(!lobbyScene) return;
+  if(lobbyMannequin) lobbyScene.remove(lobbyMannequin.group);
+  lobbyMannequin = buildMannequinVisual(getEquippedSkinColor());
+  lobbyScene.add(lobbyMannequin.group);
+}
+function animateLobby(){
+  requestAnimationFrame(animateLobby);
+  if(!lobbyActive || !lobbyMannequin || !lobbyRenderer) return;
+  lobbyMannequin.group.rotation.y += 0.012;
+  const t = performance.now()*0.0022;
+  const swing = Math.sin(t)*0.35;
+  lobbyMannequin.legL.rotation.x = swing;
+  lobbyMannequin.legR.rotation.x = -swing;
+  lobbyMannequin.armL.rotation.x = -swing*0.8;
+  lobbyMannequin.armR.rotation.x = swing*0.8;
+  lobbyRenderer.render(lobbyScene, lobbyCamera);
+}
+
+/* ============================================================
+   COINS / EQUIPPED LABELS
+   ============================================================ */
+function updateCoinDisplays(){
+  const a = document.getElementById('coinAmount'); if(a) a.textContent = save.coins;
+  const b = document.getElementById('shopCoinAmount'); if(b) b.textContent = save.coins;
+}
+function updateEquippedLabels(){
+  const skin = SKINS.find(s=>s.id===save.equippedSkin) || SKINS[0];
+  const gun = GUN_SKINS.find(g=>g.id===save.equippedGun) || GUN_SKINS[0];
+  document.getElementById('equippedSkinName').textContent = skin.name;
+  document.getElementById('equippedGunName').textContent = gun.name;
+}
+
+/* ============================================================
+   SHOP
+   ============================================================ */
+function hexColor(n){ return '#'+n.toString(16).padStart(6,'0'); }
+
+function renderShop(){
+  updateCoinDisplays();
+  const skinList = document.getElementById('skinShopList');
+  skinList.innerHTML = '';
+  SKINS.forEach(s=>{
+    const owned = save.ownedSkins.includes(s.id);
+    const equipped = save.equippedSkin===s.id;
+    const item = document.createElement('div');
+    item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    item.innerHTML =
+      '<div class="shopSwatch" style="background:'+hexColor(s.color)+'"></div>'+
+      '<b>'+s.name+'</b>'+
+      '<div class="cost">'+(s.cost===0?'FREE':'🪙 '+s.cost)+'</div>'+
+      '<button data-type="skin" data-id="'+s.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+    const btn = item.querySelector('button');
+    if(equipped) btn.classList.add('equippedBtn');
+    if(!owned && save.coins<s.cost) btn.disabled = true;
+    skinList.appendChild(item);
+  });
+  const gunList = document.getElementById('gunShopList');
+  gunList.innerHTML = '';
+  GUN_SKINS.forEach(g=>{
+    const owned = save.ownedGuns.includes(g.id);
+    const equipped = save.equippedGun===g.id;
+    const item = document.createElement('div');
+    item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    item.innerHTML =
+      '<div class="shopSwatch" style="background:'+hexColor(g.color)+'"></div>'+
+      '<b>'+g.name+'</b>'+
+      '<div class="cost">'+(g.cost===0?'FREE':'🪙 '+g.cost)+'</div>'+
+      '<button data-type="gun" data-id="'+g.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+    const btn = item.querySelector('button');
+    if(equipped) btn.classList.add('equippedBtn');
+    if(!owned && save.coins<g.cost) btn.disabled = true;
+    gunList.appendChild(item);
+  });
+}
+
+function handleShopClick(e){
+  const btn = e.target.closest('button[data-id]');
+  if(!btn) return;
+  const type = btn.dataset.type, id = btn.dataset.id;
+  if(type==='skin'){
+    const s = SKINS.find(x=>x.id===id);
+    if(!s) return;
+    if(save.ownedSkins.includes(id)) save.equippedSkin = id;
+    else if(save.coins>=s.cost){ save.coins -= s.cost; save.ownedSkins.push(id); save.equippedSkin = id; }
+  } else {
+    const g = GUN_SKINS.find(x=>x.id===id);
+    if(!g) return;
+    if(save.ownedGuns.includes(id)) save.equippedGun = id;
+    else if(save.coins>=g.cost){ save.coins -= g.cost; save.ownedGuns.push(id); save.equippedGun = id; }
+  }
+  saveGame();
+  renderShop();
+  updateEquippedLabels();
+  rebuildLobbyMannequin();
+}
+document.getElementById('skinShopList').addEventListener('click', handleShopClick);
+document.getElementById('gunShopList').addEventListener('click', handleShopClick);
+document.getElementById('openShopBtn').addEventListener('click', ()=>{
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('shopScreen').style.display = 'block';
+  renderShop();
+});
+document.getElementById('closeShopBtn').addEventListener('click', ()=>{
+  document.getElementById('shopScreen').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+});
+
+/* ============================================================
+   GOOGLE SIGN-IN
+   ============================================================ */
+// Paste your own free Google OAuth "Web application" Client ID below to enable
+// sign-in. Get one at https://console.cloud.google.com/apis/credentials
+// (APIs & Services -> Credentials -> Create Credentials -> OAuth client ID ->
+// Web application -> add this page's exact URL under "Authorized JavaScript
+// origins"). Progress always saves locally to this browser regardless.
+const GOOGLE_CLIENT_ID = '';
+
+function handleGoogleSignIn(response){
+  try{
+    const base64 = response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const payload = JSON.parse(atob(base64));
+    save.profileName = payload.name || null;
+    save.profilePic = payload.picture || null;
+    saveGame();
+    renderProfile();
+  }catch(e){ console.error('Google sign-in decode failed', e); }
+}
+function renderProfile(){
+  const signedOut = document.getElementById('profileSignedOut');
+  const signedIn = document.getElementById('profileSignedIn');
+  if(save.profileName){
+    signedOut.style.display = 'none';
+    signedIn.style.display = 'flex';
+    document.getElementById('profileNameText').textContent = save.profileName;
+    if(save.profilePic) document.getElementById('profilePicImg').src = save.profilePic;
+  } else {
+    signedOut.style.display = 'block';
+    signedIn.style.display = 'none';
+  }
+}
+document.getElementById('googleSignInBtn').addEventListener('click', ()=>{
+  const note = document.getElementById('googleSetupNote');
+  if(!GOOGLE_CLIENT_ID){
+    note.textContent = 'Sign-in needs a one-time setup by whoever owns this game (a free Google Client ID). Ask them, or see the comment near GOOGLE_CLIENT_ID in the code. Progress always saves to this browser either way.';
+    note.style.display = 'block';
+    return;
+  }
+  if(typeof google === 'undefined' || !google.accounts){
+    note.textContent = 'The Google sign-in library did not load (check your internet connection) — try again in a moment.';
+    note.style.display = 'block';
+    return;
+  }
+  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID, callback:handleGoogleSignIn});
+  google.accounts.id.prompt();
+});
+
+updateEquippedLabels();
+updateCoinDisplays();
+renderProfile();
+initLobbyScene();
 
 /* ============================================================
    RESIZE
