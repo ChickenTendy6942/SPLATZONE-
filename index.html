@@ -254,6 +254,7 @@
   }
   .shopItem.owned{border-color:var(--cyan);}
   .shopItem.equipped{border-color:var(--lime); box-shadow:0 0 0 1px var(--lime);}
+  .rarityTag{font-size:9.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;}
   .shopSwatch{width:100%; height:60px; border-radius:8px; margin-bottom:10px;}
   .shopItem b{display:block; font-size:13.5px; margin-bottom:4px;}
   .shopItem .cost{font-size:12px; color:#ffd54d; margin-bottom:8px;}
@@ -345,8 +346,9 @@
     <div class="panel">
       <h2>3. YOUR WEAPON</h2>
       <div class="weaponList" style="grid-template-columns:1fr;">
-        <div class="wCard"><b>ASSAULT RIFLE</b><div class="stats">Fully automatic · Dmg 14 · Mag 30 · Mid-range<br>Watch your ammo counter — reload with R before you're empty.</div></div>
+        <div class="wCard"><b id="menuEquippedWeaponName">Starter Blaster</b><div class="stats" id="menuEquippedWeaponStats">Fully automatic · Mid-range</div></div>
       </div>
+      <p class="hint">Better weapons are unlocked in the Shop with coins earned from playing — the strongest ones take real grinding.</p>
     </div>
 
     <div class="panel">
@@ -367,6 +369,8 @@
     </div>
     <h2 class="shopSectionTitle">CHARACTER SKINS</h2>
     <div id="skinShopList" class="shopGrid"></div>
+    <h2 class="shopSectionTitle">WEAPONS</h2>
+    <div id="weaponShopList" class="shopGrid"></div>
     <h2 class="shopSectionTitle">GUN RIGS</h2>
     <div id="gunShopList" class="shopGrid"></div>
     <button id="closeShopBtn" class="lobbyBtn" style="margin-top:24px;">BACK TO LOBBY</button>
@@ -499,26 +503,35 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
    CONFIG
    ============================================================ */
 const GUNS = {
-  rifle: { key:'rifle', name:'ASSAULT RIFLE', color:0x2c2f36, dmg:14, mag:30, fireRate:130, reload:1600, range:45, spread:0.028, pellets:1, auto:true }
+  starter: { key:'starter', name:'Starter Blaster', color:0x2c2f36, dmg:13, mag:26, fireRate:150, reload:1500, range:40, spread:0.032, pellets:1, auto:true,  cost:0,    rarity:'Common' },
+  smg:     { key:'smg',     name:'Rapidfire SMG',   color:0x274a8a, dmg:9,  mag:34, fireRate:85,  reload:1500, range:32, spread:0.055, pellets:1, auto:true,  cost:900,  rarity:'Rare' },
+  shotgun: { key:'shotgun', name:'Power Shotgun',   color:0x8a5a1f, dmg:10, mag:6,  fireRate:700, reload:1800, range:15, spread:0.15,  pellets:7, auto:false, cost:1600, rarity:'Epic' },
+  sniper:  { key:'sniper',  name:'Deadeye Sniper',  color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:70, spread:0.006, pellets:1, auto:false, cost:4200, rarity:'Legendary' }
 };
-const GUN_KEYS = ['rifle'];
+const WEAPON_KEYS = ['starter','smg','shotgun','sniper'];
 
 const DIFFICULTY_SETTINGS = [
-  { name:'EASY',   desc:'Bots react slowly and miss a lot. Good for learning the map.',        aggro:20, hitMult:0.55, fireRateMult:1.55, dmgMult:0.8  },
-  { name:'NORMAL', desc:'Bots react and aim at a moderate, fair pace.',                          aggro:30, hitMult:1.0,  fireRateMult:1.0,  dmgMult:1.0  },
-  { name:'HARD',   desc:'Bots track you further out and land more shots.',                       aggro:38, hitMult:1.3,  fireRateMult:0.75, dmgMult:1.1  },
-  { name:'INSANE', desc:'Bots spot you from far away, fire fast, and rarely miss. Brutal.',       aggro:46, hitMult:1.6,  fireRateMult:0.55, dmgMult:1.25 }
+  { name:'EASY',   desc:'Bots react slowly and miss a lot. Lower coin payout.',                    aggro:20, hitMult:0.55, fireRateMult:1.55, dmgMult:0.8,  coinMult:0.5 },
+  { name:'NORMAL', desc:'Bots react and aim at a moderate, fair pace. Standard coin payout.',       aggro:30, hitMult:1.0,  fireRateMult:1.0,  dmgMult:1.0,  coinMult:1.0 },
+  { name:'HARD',   desc:'Bots track you further out and land more shots. Bigger coin payout.',      aggro:38, hitMult:1.3,  fireRateMult:0.75, dmgMult:1.1,  coinMult:1.4 },
+  { name:'INSANE', desc:'Bots spot you from far away, fire fast, rarely miss. Biggest coin payout.', aggro:46, hitMult:1.6,  fireRateMult:0.55, dmgMult:1.25, coinMult:1.8 }
 ];
 let selectedDifficulty = 2; // 1-4
+function currentCoinMult(){
+  const d = DIFFICULTY_SETTINGS[selectedDifficulty-1];
+  return d ? d.coinMult : 1;
+}
 
 const SKINS = [
-  {id:'rookie',  name:'Rookie',        cost:0,   vest:0x6b7280, legs:0x33333e, arms:0x6b7280, helmet:'none',  accessory:'none',     accent:0x9ca3af},
-  {id:'crimson', name:'Crimson Recon', cost:150, vest:0xd9203f, legs:0x1a1a22, arms:0xd9203f, helmet:'cap',   accessory:'none',     accent:0x8a0f22},
-  {id:'aqua',    name:'Aqua Phantom',  cost:150, vest:0x1fb6c9, legs:0x14313d, arms:0x1fb6c9, helmet:'mask',  accessory:'none',     accent:0x0d1f26},
-  {id:'inferno', name:'Inferno Titan', cost:300, vest:0xff6b2c, legs:0x241211, arms:0xb8341a, helmet:'none',  accessory:'backpack', accent:0xffb03d},
-  {id:'ronin',   name:'Cyber Ronin',   cost:400, vest:0x1c1f3a, legs:0x101018, arms:0x1c1f3a, helmet:'visor', accessory:'blade',    accent:0x39ff8f},
-  {id:'golden',  name:'Golden Legend', cost:600, vest:0xffd54d, legs:0xc9a13a, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff2c2}
+  {id:'rookie',  name:'Rookie',        cost:0,    rarity:'Common',    vest:0x6b7280, legs:0x33333e, arms:0x6b7280, helmet:'none',  accessory:'none',     accent:0x9ca3af},
+  {id:'crimson', name:'Crimson Recon', cost:600,  rarity:'Rare',      vest:0xe22348, legs:0x1a1a22, arms:0xe22348, helmet:'cap',   accessory:'none',     accent:0xff5478},
+  {id:'aqua',    name:'Aqua Phantom',  cost:600,  rarity:'Rare',      vest:0x17c9e6, legs:0x14313d, arms:0x17c9e6, helmet:'mask',  accessory:'none',     accent:0x7af4ff},
+  {id:'inferno', name:'Inferno Titan', cost:1400, rarity:'Epic',      vest:0xff5b1f, legs:0x241211, arms:0xd42e0e, helmet:'none',  accessory:'backpack', accent:0xffc23d},
+  {id:'ronin',   name:'Cyber Ronin',   cost:2200, rarity:'Epic',      vest:0x171933, legs:0x0c0c14, arms:0x1c1f3a, helmet:'visor', accessory:'blade',    accent:0x39ff8f},
+  {id:'golden',  name:'Golden Legend', cost:5000, rarity:'Legendary', vest:0xffd54d, legs:0xd9ac3f, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff6d9}
 ];
+const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d' };
+
 const GUN_SKINS = [
   {id:'stock',    name:'Stock',       color:0x2c2f36, cost:0},
   {id:'cyan',     name:'Cyan Rig',    color:0x1fb6c9, cost:150},
@@ -533,13 +546,13 @@ function loadSave(){
     if(raw){
       const parsed = JSON.parse(raw);
       return Object.assign({
-        coins:0, ownedSkins:['rookie'], ownedGuns:['stock'],
-        equippedSkin:'rookie', equippedGun:'stock',
+        coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'],
+        equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter',
         profileName:null, profilePic:null
       }, parsed);
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], equippedSkin:'rookie', equippedGun:'stock', profileName:null, profilePic:null };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter', profileName:null, profilePic:null };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
@@ -651,6 +664,7 @@ const MANTLE_MAX_HEIGHT = 2.6;
 const MANTLE_MIN_HEIGHT = 0.5;
 const MANTLE_DURATION = 0.38;
 const SIPHON_AMOUNT = 25; // 25% of 100 max HP, healed on elimination
+const PER_KILL_COINS = 15;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RADIUS = 1.1;
 const PROJECTILE_GRAVITY = 10; // bullet drop for that real-paintball arc
@@ -987,6 +1001,20 @@ function buildMannequinVisual(skin){
   const legL = limb(legGeo, legMat, -0.13, 0.85, 0.78);
   const legR = limb(legGeo, legMat, 0.13, 0.85, 0.78);
 
+  // ---- chest trim (every outfit gets a bit of gear detail) ----
+  const trimStripe = new THREE.Mesh(new THREE.BoxGeometry(0.47,0.09,0.29), accentMat);
+  trimStripe.position.set(0,1.02,0);
+  group.add(trimStripe);
+  const beltGeo = new THREE.BoxGeometry(0.44,0.08,0.27);
+  const belt = new THREE.Mesh(beltGeo, new THREE.MeshLambertMaterial({color:0x1a1a22}));
+  belt.position.set(0,0.9,0);
+  group.add(belt);
+  if(skin.rarity==='Legendary'){
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.23,10,10), new THREE.MeshBasicMaterial({color:skin.accent, transparent:true, opacity:0.18}));
+    glow.position.y = 1.68;
+    group.add(glow);
+  }
+
   // ---- helmet / head gear ----
   const helmet = skin.helmet || 'none';
   if(helmet==='cap'){
@@ -1061,13 +1089,18 @@ function spawnEntities(){
   entities = [];
   projectiles = [];
   tracers = [];
+  const botNamePool = ['noobmaster67','CrazyPea96','WildCactusBob','Gooddoggo80','WalkInThePark66','Grandma40','AtTheBeach321','DoubleDaring'];
+  for(let i=botNamePool.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    const tmp = botNamePool[i]; botNamePool[i] = botNamePool[j]; botNamePool[j] = tmp;
+  }
   const spawnP = randomSpawnPoint(currentMap.radius);
   camera.position.set(spawnP.x, 1.6, spawnP.z);
 
   player = {
     isPlayer:true, alive:true, health:100,
-    gunKey:'rifle',
-    ammo:{rifle:GUNS.rifle.mag},
+    gunKey:save.equippedWeapon,
+    ammo:{[save.equippedWeapon]: GUNS[save.equippedWeapon].mag},
     reloading:false, reloadEndAt:0, lastShot:0, semiFired:false,
     kills:0, name:'YOU',
     velocityY:0, grounded:true, eyeHeight:EYE_HEIGHT, airOffset:0,
@@ -1083,21 +1116,21 @@ function spawnEntities(){
     const botSkin = SKINS[Math.floor(Math.random()*SKINS.length)];
     const meshBundle = makeBotMesh(botSkin);
     meshBundle.group.position.set(sp.x,0,sp.z);
-    const nameTag = makeNameSprite('BOT '+(i+1), 1);
+    const nameTag = makeNameSprite(botNamePool[i], 1);
     nameTag.position.y = 2.4;
     meshBundle.group.add(nameTag);
     scene.add(meshBundle.group);
     meshBundle.body.userData.entityRef = null; // set below
     meshBundle.head.userData.entityRef = null;
 
-    const gunKey = 'rifle';
+    const gunKey = WEAPON_KEYS[Math.floor(Math.random()*WEAPON_KEYS.length)];
     const bot = {
       isPlayer:false, alive:true, health:100,
       gunKey, lastShot: performance.now() + Math.random()*1000,
       mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
       limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
       animPhase: Math.random()*10,
-      wanderTarget:null, name:'BOT '+(i+1), kills:0,
+      wanderTarget:null, name:botNamePool[i], kills:0,
       lastDamagedBy:null
     };
     meshBundle.body.userData.entityRef = bot;
@@ -1112,7 +1145,7 @@ function spawnEntities(){
 let gunMesh, muzzleFlash;
 function buildGunViewmodel(){
   gunMesh = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,0.55), new THREE.MeshLambertMaterial({color:GUNS.rifle.color}));
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,0.55), new THREE.MeshLambertMaterial({color:GUNS.starter.color}));
   box.position.set(0,0,-0.3);
   gunMesh.add(box);
   gunMesh.userData.box = box;
@@ -1311,13 +1344,21 @@ function killEntity(ent, killer){
   if(!ent.isPlayer){
     ent.mesh.visible = false;
   }
+  let killMsg = `${killer? killer.name : 'THE ZONE'} eliminated ${ent.name}`;
   if(killer && killer.alive){
     if(killer.isPlayer){ player.kills++; }
     else killer.kills++;
     killer.health = Math.min(100, killer.health + SIPHON_AMOUNT);
-    if(killer.isPlayer) flashHeal();
+    if(killer.isPlayer){
+      flashHeal();
+      const killCoins = Math.round(PER_KILL_COINS * currentCoinMult());
+      save.coins += killCoins;
+      saveGame();
+      updateCoinDisplays();
+      killMsg += ` (+${killCoins} coins)`;
+    }
   }
-  addKillFeed(`${killer? killer.name : 'THE ZONE'} eliminated ${ent.name}`);
+  addKillFeed(killMsg);
   sfxDeath();
   if(ent.isPlayer){
     endMatch(false, killer);
@@ -1643,7 +1684,7 @@ function endMatch(won, killer){
   document.getElementById('statKills').textContent = player.kills;
   document.getElementById('statPlace').textContent = won ? '#1' : ('#'+(botsStillAlive+1));
 
-  const coinsEarned = 20 + player.kills*10 + (won ? 75 : 0);
+  const coinsEarned = Math.round((20 + (won ? 75 : 0)) * currentCoinMult());
   save.coins += coinsEarned;
   saveGame();
   const coinEl = document.getElementById('statCoins');
@@ -1911,14 +1952,20 @@ function animateLobby(){
    COINS / EQUIPPED LABELS
    ============================================================ */
 function updateCoinDisplays(){
-  const a = document.getElementById('coinAmount'); if(a) a.textContent = save.coins;
-  const b = document.getElementById('shopCoinAmount'); if(b) b.textContent = save.coins;
+  const a = document.getElementById('coinAmount'); if(a) a.textContent = save.coins.toLocaleString();
+  const b = document.getElementById('shopCoinAmount'); if(b) b.textContent = save.coins.toLocaleString();
 }
 function updateEquippedLabels(){
   const skin = SKINS.find(s=>s.id===save.equippedSkin) || SKINS[0];
   const gun = GUN_SKINS.find(g=>g.id===save.equippedGun) || GUN_SKINS[0];
   document.getElementById('equippedSkinName').textContent = skin.name;
   document.getElementById('equippedGunName').textContent = gun.name;
+
+  const weapon = GUNS[save.equippedWeapon] || GUNS.starter;
+  const nameEl = document.getElementById('menuEquippedWeaponName');
+  const statsEl = document.getElementById('menuEquippedWeaponStats');
+  if(nameEl) nameEl.textContent = weapon.name;
+  if(statsEl) statsEl.textContent = (weapon.auto?'Fully automatic':'Semi-automatic')+' · Dmg '+weapon.dmg+' · Mag '+weapon.mag+' · '+weapon.rarity;
 }
 
 /* ============================================================
@@ -1935,18 +1982,43 @@ function renderShop(){
     const equipped = save.equippedSkin===s.id;
     const item = document.createElement('div');
     item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    item.style.borderColor = equipped ? '' : (RARITY_COLORS[s.rarity]||'#2a2a38');
     const trait = s.accessory!=='none' ? s.accessory : (s.helmet!=='none' ? s.helmet : 'basic');
     item.innerHTML =
+      '<div class="rarityTag" style="color:'+RARITY_COLORS[s.rarity]+';">'+s.rarity+'</div>'+
       '<div class="shopSwatch" style="background:linear-gradient(135deg,'+hexColor(s.vest)+','+hexColor(s.accent)+')"></div>'+
       '<b>'+s.name+'</b>'+
       '<div class="cost" style="text-transform:capitalize;color:#9a9ab0;">'+trait+'</div>'+
-      '<div class="cost">'+(s.cost===0?'FREE':'🪙 '+s.cost)+'</div>'+
+      '<div class="cost">'+(s.cost===0?'FREE':'🪙 '+s.cost.toLocaleString())+'</div>'+
       '<button data-type="skin" data-id="'+s.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
     const btn = item.querySelector('button');
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<s.cost) btn.disabled = true;
     skinList.appendChild(item);
   });
+
+  const weaponList = document.getElementById('weaponShopList');
+  weaponList.innerHTML = '';
+  WEAPON_KEYS.forEach(key=>{
+    const w = GUNS[key];
+    const owned = save.ownedWeapons.includes(key);
+    const equipped = save.equippedWeapon===key;
+    const item = document.createElement('div');
+    item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    item.style.borderColor = equipped ? '' : (RARITY_COLORS[w.rarity]||'#2a2a38');
+    item.innerHTML =
+      '<div class="rarityTag" style="color:'+RARITY_COLORS[w.rarity]+';">'+w.rarity+'</div>'+
+      '<div class="shopSwatch" style="background:'+hexColor(w.color)+'"></div>'+
+      '<b>'+w.name+'</b>'+
+      '<div class="cost" style="text-transform:none;color:#9a9ab0;">Dmg '+w.dmg+' · Mag '+w.mag+'</div>'+
+      '<div class="cost">'+(w.cost===0?'FREE':'🪙 '+w.cost.toLocaleString())+'</div>'+
+      '<button data-type="weapon" data-id="'+key+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+    const btn = item.querySelector('button');
+    if(equipped) btn.classList.add('equippedBtn');
+    if(!owned && save.coins<w.cost) btn.disabled = true;
+    weaponList.appendChild(item);
+  });
+
   const gunList = document.getElementById('gunShopList');
   gunList.innerHTML = '';
   GUN_SKINS.forEach(g=>{
@@ -1975,6 +2047,11 @@ function handleShopClick(e){
     if(!s) return;
     if(save.ownedSkins.includes(id)) save.equippedSkin = id;
     else if(save.coins>=s.cost){ save.coins -= s.cost; save.ownedSkins.push(id); save.equippedSkin = id; }
+  } else if(type==='weapon'){
+    const w = GUNS[id];
+    if(!w) return;
+    if(save.ownedWeapons.includes(id)) save.equippedWeapon = id;
+    else if(save.coins>=w.cost){ save.coins -= w.cost; save.ownedWeapons.push(id); save.equippedWeapon = id; }
   } else {
     const g = GUN_SKINS.find(x=>x.id===id);
     if(!g) return;
@@ -1987,6 +2064,7 @@ function handleShopClick(e){
   rebuildLobbyMannequin();
 }
 document.getElementById('skinShopList').addEventListener('click', handleShopClick);
+document.getElementById('weaponShopList').addEventListener('click', handleShopClick);
 document.getElementById('gunShopList').addEventListener('click', handleShopClick);
 document.getElementById('openShopBtn').addEventListener('click', ()=>{
   document.getElementById('menu').style.display = 'none';
