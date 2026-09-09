@@ -108,7 +108,9 @@
   #hud{position:fixed; inset:0; z-index:20; pointer-events:none; display:none; font-family:'Inter',sans-serif;}
   #crosshair{
     position:absolute; top:50%; left:50%; width:20px; height:20px; transform:translate(-50%,-50%);
+    transition:opacity .12s;
   }
+  #crosshair.aiming{opacity:0.25;}
   #crosshair::before, #crosshair::after{
     content:''; position:absolute; background:#fff; box-shadow:0 0 2px #000;
   }
@@ -133,6 +135,9 @@
   #healthLabel{font-size:11px; letter-spacing:1px; color:#c8c8d8; margin-bottom:5px; font-weight:800;}
   #healthBarBg{width:100%; height:16px; background:#26262f; border-radius:4px; overflow:hidden; border:1px solid #3a3a48;}
   #healthBarFill{height:100%; width:100%; background:linear-gradient(90deg,#c6ff2d,#57e07a); transition:width .15s, background .2s;}
+  #sprintBarBg{width:100%; height:6px; background:#26262f; border-radius:3px; overflow:hidden; border:1px solid #3a3a48; margin-top:6px;}
+  #sprintBarFill{height:100%; width:100%; background:linear-gradient(90deg,#2de6ff,#4d7bff); transition:width .1s;}
+  #sprintBarFill.cooling{background:linear-gradient(90deg,#ff6b4d,#ff3b3b);}
 
   #ammoBox{font-family:'Archivo Black'; text-align:right;}
   #ammoBig{font-size:34px; color:#fff; line-height:1;}
@@ -155,6 +160,7 @@
   #zoneVignette.active{box-shadow:inset 0 0 180px 60px rgba(160,60,255,.55); animation:pulseZone 1s infinite;}
   @keyframes pulseZone{0%,100%{opacity:1;}50%{opacity:.7;}}
   #dmgFlash{position:absolute; inset:0; background:radial-gradient(circle, rgba(255,20,20,0) 40%, rgba(255,20,20,.45) 100%); opacity:0; pointer-events:none;}
+  #healFlash{position:absolute; inset:0; background:radial-gradient(circle, rgba(40,255,140,0) 40%, rgba(40,255,140,.4) 100%); opacity:0; pointer-events:none;}
 
   #minimapWrap{position:absolute; bottom:18px; left:18px; width:150px; height:150px; border-radius:50%; overflow:hidden; border:2px solid #3a3a48; background:#0a0a10;}
   canvas#minimap{width:100%; height:100%;}
@@ -223,6 +229,20 @@
   #shopScreen{
     display:none; position:fixed; inset:0; z-index:55; background:var(--bg); overflow-y:auto;
   }
+  #settingsScreen{
+    display:none; position:fixed; inset:0; z-index:55; background:var(--bg); overflow-y:auto;
+  }
+  .keybindList{display:flex; flex-direction:column; gap:8px;}
+  .keybindRow{
+    display:flex; align-items:center; justify-content:space-between; background:var(--panel);
+    border:1px solid var(--line); border-radius:8px; padding:12px 16px;
+  }
+  .keybindRow span{font-size:14px; color:#e8e8f0;}
+  .keybindRow button{
+    min-width:100px; background:#20202c; border:1px solid var(--line); color:var(--cyan);
+    font-family:'Archivo Black'; font-size:12.5px; padding:8px 14px; border-radius:6px; cursor:pointer;
+  }
+  .keybindRow button.listening{color:var(--pink); border-color:var(--pink);}
   .shopWrap{max-width:820px; margin:0 auto; padding:40px 24px;}
   .shopHeader{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
   .shopHeader h1{font-size:40px; background:linear-gradient(90deg,var(--pink),var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent;}
@@ -276,6 +296,7 @@
           <div class="equippedLine">Skin: <b id="equippedSkinName">Crimson</b></div>
           <div class="equippedLine">Gun rig: <b id="equippedGunName">Stock</b></div>
           <button id="openShopBtn" class="lobbyBtn">OPEN SHOP</button>
+          <button id="openSettingsBtn" class="lobbyBtn secondary">SETTINGS</button>
 
           <div id="profileArea">
             <div id="profileSignedOut">
@@ -352,16 +373,33 @@
   </div>
 </div>
 
+<div id="settingsScreen">
+  <div class="shopWrap">
+    <div class="shopHeader">
+      <h1 class="display">SETTINGS</h1>
+    </div>
+    <h2 class="shopSectionTitle">KEYBINDS — click a key, then press the new one</h2>
+    <div id="keybindList" class="keybindList"></div>
+    <div class="startRow" style="margin-top:24px; gap:14px;">
+      <button id="resetKeybindsBtn" class="lobbyBtn secondary">RESET TO DEFAULT</button>
+      <button id="closeSettingsBtn" class="lobbyBtn">BACK TO LOBBY</button>
+    </div>
+    <p class="hint">Aim Down Sights is fixed to Right Mouse Button.</p>
+  </div>
+</div>
+
 <!-- HUD -->
 <div id="hud">
   <div id="crosshair"></div>
   <div id="hitmarker"></div>
   <div id="zoneVignette"></div>
   <div id="dmgFlash"></div>
+  <div id="healFlash"></div>
 
   <div class="topLeft" id="healthWrap">
     <div id="healthLabel">HEALTH</div>
     <div id="healthBarBg"><div id="healthBarFill"></div></div>
+    <div id="sprintBarBg"><div id="sprintBarFill"></div></div>
   </div>
 
   <div class="topRight" id="ammoBox">
@@ -474,12 +512,12 @@ const DIFFICULTY_SETTINGS = [
 let selectedDifficulty = 2; // 1-4
 
 const SKINS = [
-  {id:'crimson', name:'Crimson',  color:0xff3b5c, cost:0},
-  {id:'aqua',    name:'Aqua',     color:0x2de6ff, cost:150},
-  {id:'lime',    name:'Lime',     color:0xc6ff2d, cost:150},
-  {id:'sunset',  name:'Sunset',   color:0xff9d3d, cost:250},
-  {id:'violet',  name:'Violet',   color:0xb14dff, cost:250},
-  {id:'gold',    name:'Gilded',   color:0xffd54d, cost:500}
+  {id:'rookie',  name:'Rookie',        cost:0,   vest:0x6b7280, legs:0x33333e, arms:0x6b7280, helmet:'none',  accessory:'none',     accent:0x9ca3af},
+  {id:'crimson', name:'Crimson Recon', cost:150, vest:0xd9203f, legs:0x1a1a22, arms:0xd9203f, helmet:'cap',   accessory:'none',     accent:0x8a0f22},
+  {id:'aqua',    name:'Aqua Phantom',  cost:150, vest:0x1fb6c9, legs:0x14313d, arms:0x1fb6c9, helmet:'mask',  accessory:'none',     accent:0x0d1f26},
+  {id:'inferno', name:'Inferno Titan', cost:300, vest:0xff6b2c, legs:0x241211, arms:0xb8341a, helmet:'none',  accessory:'backpack', accent:0xffb03d},
+  {id:'ronin',   name:'Cyber Ronin',   cost:400, vest:0x1c1f3a, legs:0x101018, arms:0x1c1f3a, helmet:'visor', accessory:'blade',    accent:0x39ff8f},
+  {id:'golden',  name:'Golden Legend', cost:600, vest:0xffd54d, legs:0xc9a13a, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff2c2}
 ];
 const GUN_SKINS = [
   {id:'stock',    name:'Stock',       color:0x2c2f36, cost:0},
@@ -495,25 +533,53 @@ function loadSave(){
     if(raw){
       const parsed = JSON.parse(raw);
       return Object.assign({
-        coins:0, ownedSkins:['crimson'], ownedGuns:['stock'],
-        equippedSkin:'crimson', equippedGun:'stock',
+        coins:0, ownedSkins:['rookie'], ownedGuns:['stock'],
+        equippedSkin:'rookie', equippedGun:'stock',
         profileName:null, profilePic:null
       }, parsed);
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['crimson'], ownedGuns:['stock'], equippedSkin:'crimson', equippedGun:'stock', profileName:null, profilePic:null };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], equippedSkin:'rookie', equippedGun:'stock', profileName:null, profilePic:null };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
 }
 let save = loadSave();
-function getEquippedSkinColor(){
-  const s = SKINS.find(x=>x.id===save.equippedSkin) || SKINS[0];
-  return s.color;
+function getEquippedSkinDef(){
+  return SKINS.find(x=>x.id===save.equippedSkin) || SKINS[0];
 }
 function getEquippedGunColor(){
   const g = GUN_SKINS.find(x=>x.id===save.equippedGun) || GUN_SKINS[0];
   return g.color;
+}
+
+const KEYBIND_KEY = 'splatzone_keybinds_v1';
+const DEFAULT_KEYBINDS = {
+  forward:'KeyW', back:'KeyS', left:'KeyA', right:'KeyD',
+  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR'
+};
+const KEYBIND_LABELS = {
+  forward:'Move Forward', back:'Move Back', left:'Move Left', right:'Move Right',
+  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload'
+};
+function loadKeybinds(){
+  try{
+    const raw = localStorage.getItem(KEYBIND_KEY);
+    if(raw) return Object.assign({}, DEFAULT_KEYBINDS, JSON.parse(raw));
+  }catch(e){}
+  return Object.assign({}, DEFAULT_KEYBINDS);
+}
+function saveKeybinds(){ try{ localStorage.setItem(KEYBIND_KEY, JSON.stringify(KEYBINDS)); }catch(e){} }
+let KEYBINDS = loadKeybinds();
+function keyLabel(code){
+  if(!code) return '—';
+  if(code.startsWith('Key')) return code.slice(3);
+  if(code.startsWith('Digit')) return code.slice(5);
+  if(code==='Space') return 'Space';
+  if(code==='ControlLeft'||code==='ControlRight') return 'Ctrl';
+  if(code==='ShiftLeft'||code==='ShiftRight') return 'Shift';
+  if(code==='AltLeft'||code==='AltRight') return 'Alt';
+  return code;
 }
 
 const MAPS = {
@@ -531,7 +597,8 @@ const MAPS = {
       {x:28,z:20,w:3,d:3,h:2,c:0xff8659},{x:-28,z:18,w:3,d:3,h:2,c:0xff8659},
       {x:30,z:-22,w:3,d:3,h:2,c:0xff8659},{x:-30,z:-20,w:3,d:3,h:2,c:0xff8659}
     ],
-    pillarRing:null
+    pillarRing:null,
+    medkitSpots:[{x:0,z:0},{x:20,z:8},{x:-20,z:-8},{x:8,z:-20},{x:-8,z:20}]
   },
   ruins: {
     name:'Ashfall Ruins', radius:50,
@@ -545,7 +612,8 @@ const MAPS = {
       {x:35,z:0,w:3,d:3,h:2,c:0x9d7ad9},{x:-35,z:0,w:3,d:3,h:2,c:0x9d7ad9},
       {x:0,z:35,w:3,d:3,h:2,c:0x9d7ad9},{x:0,z:-35,w:3,d:3,h:2,c:0x9d7ad9}
     ],
-    pillarRing:{count:8, radius:18, pRadius:1.2, height:7, c:0xd48ecf}
+    pillarRing:{count:8, radius:18, pRadius:1.2, height:7, c:0xd48ecf},
+    medkitSpots:[{x:0,z:0},{x:30,z:8},{x:-30,z:-8},{x:8,z:30},{x:-8,z:-30}]
   }
 };
 
@@ -582,6 +650,20 @@ const SLIDE_DURATION = 0.55;
 const MANTLE_MAX_HEIGHT = 2.6;
 const MANTLE_MIN_HEIGHT = 0.5;
 const MANTLE_DURATION = 0.38;
+const SIPHON_AMOUNT = 25; // 25% of 100 max HP, healed on elimination
+const MEDKIT_HEAL = 50;
+const MEDKIT_RADIUS = 1.1;
+const PROJECTILE_GRAVITY = 10; // bullet drop for that real-paintball arc
+const AIM_SPREAD_MULT = 0.12; // spread multiplier while aiming down sights ("ADS")
+const AIM_FOV = 55;
+const HIP_FOV = 75;
+const AIM_SPEED_MULT = 0.72;
+const CROUCH_EYE_HEIGHT = 1.15;
+const CROUCH_SPEED_MULT = 0.55;
+const TAC_SPRINT_DURATION = 3.0;
+const TAC_SPRINT_COOLDOWN = 4.0;
+const TAC_SPRINT_MULT = 1.9;
+const TAC_SPRINT_REGEN_RATE = TAC_SPRINT_DURATION / TAC_SPRINT_COOLDOWN;
 
 /* ============================================================
    STATE
@@ -589,6 +671,7 @@ const MANTLE_DURATION = 0.38;
 let selectedMap = 'sandlot';
 let scene, camera, renderer, controls, clock;
 let obstacles = [];       // {minX,maxX,minZ,maxZ}
+let medkits = [];
 let obstacleMeshes = [];
 let currentMap;
 let zonePhases, matchElapsed = 0, gameState = 'menu'; // menu, countdown, playing, ended
@@ -605,6 +688,8 @@ let audioCtx = null;
 
 const clockEl = {
   healthFill: document.getElementById('healthBarFill'),
+  sprintFill: document.getElementById('sprintBarFill'),
+  crosshair: document.getElementById('crosshair'),
   ammoBig: document.getElementById('ammoBig'),
   ammoSmall: document.getElementById('ammoSmall'),
   weaponName: document.getElementById('weaponName'),
@@ -616,6 +701,7 @@ const clockEl = {
   hitmarker: document.getElementById('hitmarker'),
   zoneVignette: document.getElementById('zoneVignette'),
   dmgFlash: document.getElementById('dmgFlash'),
+  healFlash: document.getElementById('healFlash'),
   minimap: document.getElementById('minimap'),
   countdownWrap: document.getElementById('countdownWrap'),
   countdownNum: document.getElementById('countdownNum'),
@@ -677,6 +763,7 @@ function sfxShoot(gunKey){
 function sfxHit(){ beep({freq:900,dur:0.05,type:'sine',vol:0.18}); }
 function sfxHurt(){ beep({freq:140,dur:0.18,type:'sawtooth',vol:0.2,slideTo:60}); }
 function sfxDeath(){ beep({freq:400,dur:0.3,type:'sine',vol:0.2,slideTo:40}); }
+function sfxHeal(){ beep({freq:500,dur:0.12,type:'sine',vol:0.18,slideTo:900}); }
 
 /* ============================================================
    TEXTURES / SPRITES
@@ -817,6 +904,24 @@ function buildScene(mapKey){
   zoneRingMesh.rotation.x = -Math.PI/2;
   zoneRingMesh.position.y = 0.05;
   scene.add(zoneRingMesh);
+
+  medkits = [];
+  (currentMap.medkitSpots||[]).forEach(spot=>{
+    const group = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5), new THREE.MeshLambertMaterial({color:0xffffff}));
+    base.position.y = 0.25;
+    group.add(base);
+    const crossMat = new THREE.MeshBasicMaterial({color:0xff3b3b});
+    const barH = new THREE.Mesh(new THREE.BoxGeometry(0.36,0.09,0.09), crossMat);
+    barH.position.set(0,0.25,0.26);
+    group.add(barH);
+    const barV = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.36,0.09), crossMat);
+    barV.position.set(0,0.25,0.26);
+    group.add(barV);
+    group.position.set(spot.x,0.1,spot.z);
+    scene.add(group);
+    medkits.push({x:spot.x, z:spot.z, group, active:true});
+  });
 }
 
 /* ============================================================
@@ -849,12 +954,14 @@ function hasLineOfSight(fromPos, toPos){
 /* ============================================================
    ENTITIES (player + bots)
    ============================================================ */
-function buildMannequinVisual(vestColorHex){
+function buildMannequinVisual(skin){
   const group = new THREE.Group();
-  const limbMat = new THREE.MeshLambertMaterial({color:0x5a5a68});
-  const legMat = new THREE.MeshLambertMaterial({color:0x33333e});
-  const vestMat = new THREE.MeshLambertMaterial({color:vestColorHex});
+  const limbMat = new THREE.MeshLambertMaterial({color:skin.arms});
+  const legMat = new THREE.MeshLambertMaterial({color:skin.legs});
+  const vestMat = new THREE.MeshLambertMaterial({color:skin.vest});
   const headMat = new THREE.MeshLambertMaterial({color:0xffe0c2});
+  const accentMat = new THREE.MeshBasicMaterial({color:skin.accent||0xffffff});
+  const trimMat = new THREE.MeshLambertMaterial({color:skin.accent||skin.vest});
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.2,10,10), headMat);
   head.position.y = 1.68;
@@ -880,12 +987,55 @@ function buildMannequinVisual(vestColorHex){
   const legL = limb(legGeo, legMat, -0.13, 0.85, 0.78);
   const legR = limb(legGeo, legMat, 0.13, 0.85, 0.78);
 
-  return {group, head, torso, armL, armR, legL, legR, vestMat};
+  // ---- helmet / head gear ----
+  const helmet = skin.helmet || 'none';
+  if(helmet==='cap'){
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.1,0.34), trimMat);
+    cap.position.y = 1.82;
+    group.add(cap);
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.04,0.14), trimMat);
+    brim.position.set(0,1.75,0.22);
+    group.add(brim);
+  } else if(helmet==='mask'){
+    const mask = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.12,0.08), new THREE.MeshLambertMaterial({color:0x1a1a22}));
+    mask.position.set(0,1.63,0.17);
+    group.add(mask);
+  } else if(helmet==='visor'){
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32,0.05,0.06), accentMat);
+    visor.position.set(0,1.70,0.17);
+    group.add(visor);
+  } else if(helmet==='crown'){
+    for(let i=0;i<5;i++){
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.035,0.16,4), accentMat);
+      const a = (i/4-0.5)*1.1;
+      spike.position.set(Math.sin(a)*0.14, 1.9, Math.cos(a)*0.14-0.02);
+      group.add(spike);
+    }
+  }
+
+  // ---- back accessory ----
+  const accessory = skin.accessory || 'none';
+  if(accessory==='backpack'){
+    const pack = new THREE.Mesh(new THREE.BoxGeometry(0.32,0.4,0.16), trimMat);
+    pack.position.set(0,1.2,-0.2);
+    group.add(pack);
+  } else if(accessory==='blade'){
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.9,0.03), accentMat);
+    blade.position.set(0.12,1.35,-0.2);
+    blade.rotation.z = 0.5;
+    group.add(blade);
+  } else if(accessory==='cape'){
+    const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.42,0.75), new THREE.MeshLambertMaterial({color:skin.accent||skin.vest, side:THREE.DoubleSide}));
+    cape.position.set(0,1.05,-0.16);
+    cape.rotation.x = 0.18;
+    group.add(cape);
+  }
+
+  return {group, head, torso, armL, armR, legL, legR};
 }
 
-function makeBotMesh(hue){
-  const teamColor = new THREE.Color().setHSL(hue, 0.75, 0.62);
-  const visual = buildMannequinVisual(teamColor);
+function makeBotMesh(skinDef){
+  const visual = buildMannequinVisual(skinDef);
 
   // invisible capsule = the actual hit collider used for raycasting (unchanged hitbox)
   const bodyGeo = new THREE.CapsuleGeometry(BOT_RADIUS, 1.0, 4, 8);
@@ -922,16 +1072,18 @@ function spawnEntities(){
     kills:0, name:'YOU',
     velocityY:0, grounded:true, eyeHeight:EYE_HEIGHT, airOffset:0,
     sliding:false, slideTimer:0,
-    mantling:false, mantleTimer:0, mantleStart:null, mantleEnd:null, mantlePeakY:0
+    mantling:false, mantleTimer:0, mantleStart:null, mantleEnd:null, mantlePeakY:0,
+    aiming:false, crouching:false, currentFov:HIP_FOV,
+    sprinting:false, sprintMeter:TAC_SPRINT_DURATION, sprintCooldown:0
   };
   entities.push(player);
 
   for(let i=0;i<NUM_BOTS;i++){
     const sp = randomSpawnPoint(currentMap.radius);
-    const hue = (i/NUM_BOTS + Math.random()*0.05) % 1;
-    const meshBundle = makeBotMesh(hue);
+    const botSkin = SKINS[Math.floor(Math.random()*SKINS.length)];
+    const meshBundle = makeBotMesh(botSkin);
     meshBundle.group.position.set(sp.x,0,sp.z);
-    const nameTag = makeNameSprite('BOT '+(i+1), 1, hue);
+    const nameTag = makeNameSprite('BOT '+(i+1), 1);
     nameTag.position.y = 2.4;
     meshBundle.group.add(nameTag);
     scene.add(meshBundle.group);
@@ -1025,9 +1177,10 @@ function playerFire(){
   camera.getWorldPosition(origin);
   const baseDir = new THREE.Vector3();
   camera.getWorldDirection(baseDir);
+  const spread = player.aiming ? g.spread*AIM_SPREAD_MULT : g.spread;
 
   for(let p=0;p<g.pellets;p++){
-    const dir = getSpreadDir(baseDir, g.spread);
+    const dir = getSpreadDir(baseDir, spread);
     spawnProjectile(origin, dir, g.dmg, g.range, player, getEquippedGunColor());
   }
 
@@ -1047,7 +1200,7 @@ function spawnProjectile(origin, dir, damage, range, ownerRef, color){
   mesh.position.copy(origin);
   projectiles.push({
     pos: origin.clone(),
-    dir: dir.clone().normalize(),
+    vel: dir.clone().normalize().multiplyScalar(PAINTBALL_SPEED),
     damage, ownerRef, maxDist: range, traveled: 0, mesh, color
   });
 }
@@ -1081,7 +1234,9 @@ function removeProjectile(i){
 function updateProjectiles(dt){
   for(let i=projectiles.length-1;i>=0;i--){
     const pr = projectiles[i];
-    const moveDist = PAINTBALL_SPEED*dt;
+    pr.vel.y -= PROJECTILE_GRAVITY*dt;
+    const moveDist = pr.vel.length()*dt;
+    const dir = pr.vel.clone().normalize();
     let hitDist = moveDist;
     let hitRef = null;
     let hitPoint = null;
@@ -1090,7 +1245,7 @@ function updateProjectiles(dt){
       entities.filter(e=>!e.isPlayer && e.alive && e!==pr.ownerRef).flatMap(e=>[e.body,e.head])
     );
     if(targets.length>0){
-      const ray = new THREE.Raycaster(pr.pos, pr.dir, 0, moveDist);
+      const ray = new THREE.Raycaster(pr.pos, dir, 0, moveDist);
       const hits = ray.intersectObjects(targets, false);
       if(hits.length>0 && hits[0].distance <= hitDist){
         hitDist = hits[0].distance;
@@ -1102,9 +1257,9 @@ function updateProjectiles(dt){
     if(pr.ownerRef !== player && player.alive){
       const playerPos = new THREE.Vector3(); camera.getWorldPosition(playerPos);
       const toPlayer = playerPos.clone().sub(pr.pos);
-      const projLen = toPlayer.dot(pr.dir);
+      const projLen = toPlayer.dot(dir);
       const closestT = Math.max(0, Math.min(moveDist, projLen));
-      const closestPoint = pr.pos.clone().add(pr.dir.clone().multiplyScalar(closestT));
+      const closestPoint = pr.pos.clone().add(dir.clone().multiplyScalar(closestT));
       const dist = closestPoint.distanceTo(playerPos);
       if(dist < PLAYER_HIT_RADIUS && closestT < hitDist){
         hitDist = closestT;
@@ -1128,11 +1283,11 @@ function updateProjectiles(dt){
     }
 
     const prevPos = pr.pos.clone();
-    pr.pos.add(pr.dir.clone().multiplyScalar(moveDist));
+    pr.pos.add(pr.vel.clone().multiplyScalar(dt));
     pr.mesh.position.copy(pr.pos);
     spawnTracer(prevPos, pr.pos, pr.color);
     pr.traveled += moveDist;
-    if(pr.traveled >= pr.maxDist || Math.hypot(pr.pos.x,pr.pos.z) > currentMap.radius*2.4){
+    if(pr.traveled >= pr.maxDist || pr.pos.y < -5 || Math.hypot(pr.pos.x,pr.pos.z) > currentMap.radius*2.4){
       removeProjectile(i);
     }
   }
@@ -1156,9 +1311,11 @@ function killEntity(ent, killer){
   if(!ent.isPlayer){
     ent.mesh.visible = false;
   }
-  if(killer){
+  if(killer && killer.alive){
     if(killer.isPlayer){ player.kills++; }
     else killer.kills++;
+    killer.health = Math.min(100, killer.health + SIPHON_AMOUNT);
+    if(killer.isPlayer) flashHeal();
   }
   addKillFeed(`${killer? killer.name : 'THE ZONE'} eliminated ${ent.name}`);
   sfxDeath();
@@ -1276,6 +1433,29 @@ function updateBot(bot, dt, zoneR){
 /* ============================================================
    ZONE
    ============================================================ */
+function updateMedkits(dt){
+  const bob = performance.now()*0.002;
+  for(const kit of medkits){
+    if(!kit.active) continue;
+    kit.group.rotation.y += dt*1.2;
+    kit.group.position.y = 0.1 + Math.sin(bob + kit.x)*0.08;
+    for(const e of entities){
+      if(!e.alive || e.health>=100) continue;
+      let ex, ez;
+      if(e.isPlayer){ ex=camera.position.x; ez=camera.position.z; }
+      else { ex=e.mesh.position.x; ez=e.mesh.position.z; }
+      const d = Math.hypot(ex-kit.x, ez-kit.z);
+      if(d < MEDKIT_RADIUS){
+        e.health = Math.min(100, e.health + MEDKIT_HEAL);
+        kit.active = false;
+        kit.group.visible = false;
+        if(e.isPlayer){ flashHeal(); sfxHeal(); addKillFeed('Med kit picked up (+'+MEDKIT_HEAL+' HP)'); }
+        break;
+      }
+    }
+  }
+}
+
 function getZoneState(t){
   for(let i=0;i<zonePhases.length-1;i++){
     const a = zonePhases[i], b = zonePhases[i+1];
@@ -1296,6 +1476,14 @@ function flashDamage(){
     clockEl.dmgFlash.style.opacity = 0;
   });
 }
+function flashHeal(){
+  clockEl.healFlash.style.transition = 'none';
+  clockEl.healFlash.style.opacity = 1;
+  requestAnimationFrame(()=>{
+    clockEl.healFlash.style.transition = 'opacity .4s';
+    clockEl.healFlash.style.opacity = 0;
+  });
+}
 
 /* ============================================================
    INPUT
@@ -1305,13 +1493,20 @@ let isMouseDown = false;
 window.addEventListener('keydown', e=>{
   keys[e.code] = true;
   if(gameState==='playing'){
-    if(e.code==='KeyR') startReload();
-    if(e.code==='Space') handleJumpOrMantle();
-    if(e.code==='KeyC') handleSlide();
+    if(e.code===KEYBINDS.reload) startReload();
+    if(e.code===KEYBINDS.jump) handleJumpOrMantle();
+    if(e.code===KEYBINDS.slide) handleSlide();
   }
 });
 window.addEventListener('keyup', e=>{ keys[e.code]=false; });
+document.addEventListener('contextmenu', e=>{
+  if(gameState==='playing' || gameState==='countdown') e.preventDefault();
+});
 document.addEventListener('mousedown', e=>{
+  if(e.button===2){
+    if(gameState==='playing' && document.pointerLockElement) player.aiming = true;
+    return;
+  }
   if(e.button!==0) return;
   isMouseDown = true;
   ensureAudio();
@@ -1321,6 +1516,7 @@ document.addEventListener('mousedown', e=>{
   }
 });
 window.addEventListener('mouseup', e=>{
+  if(e.button===2){ if(player) player.aiming = false; return; }
   if(e.button!==0) return;
   isMouseDown = false;
   if(player) player.semiFired = false;
@@ -1362,7 +1558,7 @@ function tryMantle(){
 
 function handleSlide(){
   if(player.sliding || player.mantling || !player.grounded) return;
-  const moving = keys['KeyW']||keys['KeyA']||keys['KeyS']||keys['KeyD'];
+  const moving = keys[KEYBINDS.forward]||keys[KEYBINDS.left]||keys[KEYBINDS.back]||keys[KEYBINDS.right];
   if(!moving) return;
   player.sliding = true;
   player.slideTimer = 0;
@@ -1501,6 +1697,11 @@ function updateHUD(zoneState){
   clockEl.ammoSmall.textContent = ' / '+g.mag;
   clockEl.reloadTag.style.display = player.reloading ? 'block' : 'none';
 
+  const sprintPct = Math.max(0, Math.min(100, (player.sprintMeter/TAC_SPRINT_DURATION)*100));
+  clockEl.sprintFill.style.width = sprintPct+'%';
+  clockEl.sprintFill.classList.toggle('cooling', player.sprintCooldown>0);
+  clockEl.crosshair.classList.toggle('aiming', player.aiming);
+
   clockEl.matchTimer.textContent = formatTime(matchElapsed);
   const aliveBots = entities.filter(e=>!e.isPlayer && e.alive).length;
   clockEl.playersLeft.textContent = (aliveBots + (player.alive?1:0)) + ' PLAYERS LEFT';
@@ -1529,20 +1730,57 @@ function animate(){
       if(player.slideTimer >= SLIDE_DURATION) player.sliding = false;
     }
 
-    // movement
-    const speed = player.sliding
-      ? PLAYER_SPEED * SLIDE_SPEED_MULT
-      : PLAYER_SPEED * (keys['ShiftLeft']||keys['ShiftRight'] ? SPRINT_MULT : 1);
+    // crouch (held, not while sliding/mantling)
+    player.crouching = !!keys[KEYBINDS.crouch] && !player.sliding && !player.mantling;
+
+    let mx=0, mz=0;
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward); forward.y=0; forward.normalize();
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-
-    let mx=0, mz=0;
-    if(keys['KeyW']){ mx+=forward.x; mz+=forward.z; }
-    if(keys['KeyS']){ mx-=forward.x; mz-=forward.z; }
-    if(keys['KeyD']){ mx+=right.x; mz+=right.z; }
-    if(keys['KeyA']){ mx-=right.x; mz-=right.z; }
+    if(keys[KEYBINDS.forward]){ mx+=forward.x; mz+=forward.z; }
+    if(keys[KEYBINDS.back]){ mx-=forward.x; mz-=forward.z; }
+    if(keys[KEYBINDS.right]){ mx+=right.x; mz+=right.z; }
+    if(keys[KEYBINDS.left]){ mx-=right.x; mz-=right.z; }
     const len = Math.hypot(mx,mz);
+
+    // tactical sprint: short burst, then forced cooldown
+    const wantsSprint = !!keys[KEYBINDS.sprint] && len>0.001 && player.grounded && !player.sliding && !player.crouching && !player.aiming;
+    if(player.sprintCooldown > 0){
+      player.sprintCooldown -= dt;
+      player.sprinting = false;
+    } else if(wantsSprint && player.sprintMeter > 0){
+      player.sprinting = true;
+      player.sprintMeter -= dt;
+      if(player.sprintMeter <= 0){
+        player.sprintMeter = 0;
+        player.sprintCooldown = TAC_SPRINT_COOLDOWN;
+        player.sprinting = false;
+      }
+    } else {
+      player.sprinting = false;
+    }
+    if(!player.sprinting && player.sprintCooldown <= 0 && player.sprintMeter < TAC_SPRINT_DURATION){
+      player.sprintMeter = Math.min(TAC_SPRINT_DURATION, player.sprintMeter + dt*TAC_SPRINT_REGEN_RATE);
+    }
+
+    // aim-down-sights FOV zoom
+    const targetFov = player.aiming ? AIM_FOV : HIP_FOV;
+    player.currentFov += (targetFov - player.currentFov) * Math.min(dt*10, 1);
+    if(Math.abs(camera.fov - player.currentFov) > 0.05){
+      camera.fov = player.currentFov;
+      camera.updateProjectionMatrix();
+    }
+    if(gunMesh){
+      const targetGunX = player.aiming ? 0.02 : 0.28;
+      gunMesh.position.x += (targetGunX - gunMesh.position.x) * Math.min(dt*14, 1);
+    }
+
+    // movement speed
+    let speedMult = 1;
+    if(player.crouching) speedMult = CROUCH_SPEED_MULT;
+    else if(player.sprinting) speedMult = TAC_SPRINT_MULT;
+    if(player.aiming) speedMult *= AIM_SPEED_MULT;
+    const speed = player.sliding ? PLAYER_SPEED*SLIDE_SPEED_MULT : PLAYER_SPEED*speedMult;
 
     if(player.mantling){
       player.mantleTimer += dt;
@@ -1570,8 +1808,8 @@ function animate(){
       player.velocityY -= GRAVITY*dt;
       player.airOffset += player.velocityY*dt;
       if(player.airOffset <= 0){ player.airOffset = 0; player.velocityY = 0; player.grounded = true; }
-      // crouch height (slide) eases toward target
-      const targetEye = player.sliding ? SLIDE_EYE_HEIGHT : EYE_HEIGHT;
+      // eye height eases toward target (standing / sliding / crouching)
+      const targetEye = player.sliding ? SLIDE_EYE_HEIGHT : (player.crouching ? CROUCH_EYE_HEIGHT : EYE_HEIGHT);
       player.eyeHeight += (targetEye - player.eyeHeight) * Math.min(dt*12, 1);
       camera.position.y = player.eyeHeight + player.airOffset;
     }
@@ -1614,6 +1852,7 @@ function animate(){
     }
 
     updateProjectiles(dt);
+    updateMedkits(dt);
     updateTracers();
     updateHUD(zoneState);
     drawMinimap(zr);
@@ -1652,7 +1891,7 @@ function initLobbyScene(){
 function rebuildLobbyMannequin(){
   if(!lobbyScene) return;
   if(lobbyMannequin) lobbyScene.remove(lobbyMannequin.group);
-  lobbyMannequin = buildMannequinVisual(getEquippedSkinColor());
+  lobbyMannequin = buildMannequinVisual(getEquippedSkinDef());
   lobbyScene.add(lobbyMannequin.group);
 }
 function animateLobby(){
@@ -1696,9 +1935,11 @@ function renderShop(){
     const equipped = save.equippedSkin===s.id;
     const item = document.createElement('div');
     item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    const trait = s.accessory!=='none' ? s.accessory : (s.helmet!=='none' ? s.helmet : 'basic');
     item.innerHTML =
-      '<div class="shopSwatch" style="background:'+hexColor(s.color)+'"></div>'+
+      '<div class="shopSwatch" style="background:linear-gradient(135deg,'+hexColor(s.vest)+','+hexColor(s.accent)+')"></div>'+
       '<b>'+s.name+'</b>'+
+      '<div class="cost" style="text-transform:capitalize;color:#9a9ab0;">'+trait+'</div>'+
       '<div class="cost">'+(s.cost===0?'FREE':'🪙 '+s.cost)+'</div>'+
       '<button data-type="skin" data-id="'+s.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
     const btn = item.querySelector('button');
@@ -1755,6 +1996,61 @@ document.getElementById('openShopBtn').addEventListener('click', ()=>{
 document.getElementById('closeShopBtn').addEventListener('click', ()=>{
   document.getElementById('shopScreen').style.display = 'none';
   document.getElementById('menu').style.display = 'flex';
+});
+
+/* ============================================================
+   SETTINGS / KEYBINDS
+   ============================================================ */
+function renderSettings(){
+  const list = document.getElementById('keybindList');
+  list.innerHTML = '';
+  Object.keys(KEYBIND_LABELS).forEach(action=>{
+    const row = document.createElement('div');
+    row.className = 'keybindRow';
+    row.innerHTML = '<span>'+KEYBIND_LABELS[action]+'</span><button data-action="'+action+'">'+keyLabel(KEYBINDS[action])+'</button>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('button[data-action]').forEach(btn=>{
+    btn.addEventListener('click', ()=>startRebind(btn));
+  });
+}
+function startRebind(btn){
+  document.querySelectorAll('.keybindRow button.listening').forEach(b=>{
+    b.classList.remove('listening');
+    b.textContent = keyLabel(KEYBINDS[b.dataset.action]);
+  });
+  btn.classList.add('listening');
+  btn.textContent = 'PRESS A KEY…';
+  const action = btn.dataset.action;
+  function capture(e){
+    e.preventDefault();
+    if(e.code==='Escape'){
+      btn.classList.remove('listening');
+      btn.textContent = keyLabel(KEYBINDS[action]);
+      window.removeEventListener('keydown', capture, true);
+      return;
+    }
+    KEYBINDS[action] = e.code;
+    saveKeybinds();
+    btn.classList.remove('listening');
+    btn.textContent = keyLabel(e.code);
+    window.removeEventListener('keydown', capture, true);
+  }
+  window.addEventListener('keydown', capture, true);
+}
+document.getElementById('openSettingsBtn').addEventListener('click', ()=>{
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('settingsScreen').style.display = 'block';
+  renderSettings();
+});
+document.getElementById('closeSettingsBtn').addEventListener('click', ()=>{
+  document.getElementById('settingsScreen').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+});
+document.getElementById('resetKeybindsBtn').addEventListener('click', ()=>{
+  KEYBINDS = Object.assign({}, DEFAULT_KEYBINDS);
+  saveKeybinds();
+  renderSettings();
 });
 
 /* ============================================================
