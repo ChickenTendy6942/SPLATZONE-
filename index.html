@@ -74,6 +74,24 @@
   .wCard b{font-size:14px; color:var(--lime);}
   .wCard .stats{margin-top:6px; font-size:12px; color:#9a9ab0; line-height:1.6;}
 
+  .diffRow{display:flex; align-items:center; gap:16px;}
+  #difficultySlider{
+    flex:1; -webkit-appearance:none; appearance:none; height:8px; border-radius:4px;
+    background:linear-gradient(90deg, #57e07a, #ffcf2d, #ff9d2d, #ff2d2d);
+    outline:none; cursor:pointer;
+  }
+  #difficultySlider::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:24px; height:24px; border-radius:50%;
+    background:#fff; border:3px solid var(--panel); box-shadow:0 0 0 2px var(--cyan); cursor:pointer;
+  }
+  #difficultySlider::-moz-range-thumb{
+    width:24px; height:24px; border-radius:50%; background:#fff; border:3px solid var(--panel);
+    box-shadow:0 0 0 2px var(--cyan); cursor:pointer;
+  }
+  #difficultyLabel{font-family:'Archivo Black'; font-size:18px; min-width:110px; text-align:right;}
+  #difficultyDesc{color:#9a9ab0; font-size:12.5px; margin-top:10px;}
+  .diffTicks{display:flex; justify-content:space-between; font-size:10.5px; color:#77778a; margin-top:6px; letter-spacing:.5px;}
+
   .startRow{display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;}
   #startBtn{
     background:linear-gradient(90deg,var(--pink),#ff6b3d);
@@ -221,20 +239,28 @@
     </div>
 
     <div class="panel">
-      <h2>2. YOUR LOADOUT (you carry all three — switch with 1 / 2 / 3)</h2>
-      <div class="weaponList">
-        <div class="wCard"><b>1 — SIDEARM</b><div class="stats">Reliable pistol<br>Dmg 20 · Mag 10<br>Long range, slow fire</div></div>
-        <div class="wCard"><b>2 — RAPIDFIRE SMG</b><div class="stats">Spray and pray<br>Dmg 11 · Mag 25<br>Fast fire, mid range</div></div>
-        <div class="wCard"><b>3 — SPLATTER SHOTGUN</b><div class="stats">7-pellet blast<br>Dmg ~8/pellet · Mag 6<br>Devastating up close</div></div>
+      <h2>2. SET DIFFICULTY</h2>
+      <div class="diffRow">
+        <input type="range" id="difficultySlider" min="1" max="4" step="1" value="2">
+        <div id="difficultyLabel">NORMAL</div>
+      </div>
+      <div class="diffTicks"><span>EASY</span><span>NORMAL</span><span>HARD</span><span>INSANE</span></div>
+      <p id="difficultyDesc">Bots react and aim at a moderate, fair pace.</p>
+    </div>
+
+    <div class="panel">
+      <h2>3. YOUR WEAPON</h2>
+      <div class="weaponList" style="grid-template-columns:1fr;">
+        <div class="wCard"><b>ASSAULT RIFLE</b><div class="stats">Fully automatic · Dmg 14 · Mag 30 · Mid-range<br>Watch your ammo counter — reload with R before you're empty.</div></div>
       </div>
     </div>
 
     <div class="panel">
-      <h2>3. DROP IN</h2>
+      <h2>4. DROP IN</h2>
       <div class="startRow">
         <button id="startBtn">DROP IN</button>
       </div>
-      <p class="hint">100 HP · 8 players · match lasts ~3–4 minutes · the zone always wins if you don't move</p>
+      <p class="hint">100 HP · 8 players · match lasts ~3–4 minutes · jump, slide and mantle to move around cover fast</p>
     </div>
   </div>
 </div>
@@ -277,9 +303,10 @@
     <b>WASD</b><span>Move</span>
     <b>Mouse</b><span>Look</span>
     <b>Shift</b><span>Sprint</span>
+    <b>Space</b><span>Jump / Mantle over cover</span>
+    <b>C</b><span>Slide</span>
     <b>Left Click</b><span>Fire</span>
     <b>R</b><span>Reload</span>
-    <b>1 / 2 / 3</b><span>Switch weapon</span>
   </div>
 </div>
 
@@ -346,11 +373,17 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
    CONFIG
    ============================================================ */
 const GUNS = {
-  pistol:  { key:'pistol',  name:'SIDEARM',           color:0x3a3a42, dmg:20, mag:10, fireRate:380, reload:900,  range:55, spread:0.014, pellets:1, auto:false },
-  smg:     { key:'smg',     name:'RAPIDFIRE SMG',     color:0x274a8a, dmg:11, mag:25, fireRate:110, reload:1400, range:38, spread:0.05,  pellets:1, auto:true  },
-  shotgun: { key:'shotgun', name:'SPLATTER SHOTGUN',  color:0x8a5a1f, dmg:8,  mag:6,  fireRate:750, reload:1700, range:17, spread:0.13,  pellets:7, auto:false }
+  rifle: { key:'rifle', name:'ASSAULT RIFLE', color:0x2c2f36, dmg:14, mag:30, fireRate:130, reload:1600, range:45, spread:0.028, pellets:1, auto:true }
 };
-const GUN_KEYS = ['pistol','smg','shotgun'];
+const GUN_KEYS = ['rifle'];
+
+const DIFFICULTY_SETTINGS = [
+  { name:'EASY',   desc:'Bots react slowly and miss a lot. Good for learning the map.',        aggro:20, hitMult:0.55, fireRateMult:1.55, dmgMult:0.8  },
+  { name:'NORMAL', desc:'Bots react and aim at a moderate, fair pace.',                          aggro:30, hitMult:1.0,  fireRateMult:1.0,  dmgMult:1.0  },
+  { name:'HARD',   desc:'Bots track you further out and land more shots.',                       aggro:38, hitMult:1.3,  fireRateMult:0.75, dmgMult:1.1  },
+  { name:'INSANE', desc:'Bots spot you from far away, fire fast, and rarely miss. Brutal.',       aggro:46, hitMult:1.6,  fireRateMult:0.55, dmgMult:1.25 }
+];
+let selectedDifficulty = 2; // 1-4
 
 const MAPS = {
   sandlot: {
@@ -409,6 +442,15 @@ const BOT_RADIUS = 0.45;
 const PLAYER_SPEED = 5.2;
 const SPRINT_MULT = 1.55;
 const BOT_SPEED = 3.4;
+const EYE_HEIGHT = 1.6;
+const SLIDE_EYE_HEIGHT = 1.0;
+const GRAVITY = 22;
+const JUMP_FORCE = 7.2;
+const SLIDE_SPEED_MULT = 2.0;
+const SLIDE_DURATION = 0.55;
+const MANTLE_MAX_HEIGHT = 2.6;
+const MANTLE_MIN_HEIGHT = 0.5;
+const MANTLE_DURATION = 0.38;
 
 /* ============================================================
    STATE
@@ -464,6 +506,15 @@ document.getElementById('startBtn').addEventListener('click', ()=>{
 document.getElementById('playAgainBtn').addEventListener('click', ()=>{
   location.reload();
 });
+const diffSlider = document.getElementById('difficultySlider');
+const diffLabel = document.getElementById('difficultyLabel');
+const diffDesc = document.getElementById('difficultyDesc');
+diffSlider.addEventListener('input', ()=>{
+  selectedDifficulty = parseInt(diffSlider.value, 10);
+  const d = DIFFICULTY_SETTINGS[selectedDifficulty-1];
+  diffLabel.textContent = d.name;
+  diffDesc.textContent = d.desc;
+});
 
 /* ============================================================
    AUDIO (tiny synthesized sfx, no external files)
@@ -486,9 +537,7 @@ function beep({freq=440, dur=0.08, type='square', vol=0.15, slideTo=null}){
   osc.start(t0); osc.stop(t0+dur);
 }
 function sfxShoot(gunKey){
-  if(gunKey==='shotgun') beep({freq:180,dur:0.16,type:'sawtooth',vol:0.22,slideTo:60});
-  else if(gunKey==='smg') beep({freq:340,dur:0.06,type:'square',vol:0.12,slideTo:180});
-  else beep({freq:260,dur:0.09,type:'square',vol:0.16,slideTo:90});
+  beep({freq:260,dur:0.07,type:'square',vol:0.14,slideTo:110});
 }
 function sfxHit(){ beep({freq:900,dur:0.05,type:'sine',vol:0.18}); }
 function sfxHurt(){ beep({freq:140,dur:0.18,type:'sawtooth',vol:0.2,slideTo:60}); }
@@ -568,7 +617,7 @@ function addBoxObstacle(x,z,w,d,h,color){
   mesh.position.set(x,h/2,z);
   scene.add(mesh);
   obstacleMeshes.push(mesh);
-  obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2});
+  obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h});
 }
 function addPillarObstacle(x,z,r,h,color){
   const geo = new THREE.CylinderGeometry(r,r*1.1,h,10);
@@ -577,7 +626,7 @@ function addPillarObstacle(x,z,r,h,color){
   mesh.position.set(x,h/2,z);
   scene.add(mesh);
   obstacleMeshes.push(mesh);
-  obstacles.push({minX:x-r, maxX:x+r, minZ:z-r, maxZ:z+r});
+  obstacles.push({minX:x-r, maxX:x+r, minZ:z-r, maxZ:z+r, height:h});
 }
 
 function buildScene(mapKey){
@@ -698,10 +747,13 @@ function spawnEntities(){
 
   player = {
     isPlayer:true, alive:true, health:100,
-    gunKey:'pistol',
-    ammo:{pistol:GUNS.pistol.mag, smg:GUNS.smg.mag, shotgun:GUNS.shotgun.mag},
+    gunKey:'rifle',
+    ammo:{rifle:GUNS.rifle.mag},
     reloading:false, reloadEndAt:0, lastShot:0, semiFired:false,
-    kills:0, name:'YOU'
+    kills:0, name:'YOU',
+    velocityY:0, grounded:true, eyeHeight:EYE_HEIGHT, airOffset:0,
+    sliding:false, slideTimer:0,
+    mantling:false, mantleTimer:0, mantleStart:null, mantleEnd:null, mantlePeakY:0
   };
   entities.push(player);
 
@@ -717,7 +769,7 @@ function spawnEntities(){
     meshBundle.body.userData.entityRef = null; // set below
     meshBundle.head.userData.entityRef = null;
 
-    const gunKey = GUN_KEYS[Math.floor(Math.random()*GUN_KEYS.length)];
+    const gunKey = 'rifle';
     const bot = {
       isPlayer:false, alive:true, health:100,
       gunKey, lastShot: performance.now() + Math.random()*1000,
@@ -737,7 +789,7 @@ function spawnEntities(){
 let gunMesh, muzzleFlash;
 function buildGunViewmodel(){
   gunMesh = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,0.55), new THREE.MeshLambertMaterial({color:GUNS.pistol.color}));
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,0.55), new THREE.MeshLambertMaterial({color:GUNS.rifle.color}));
   box.position.set(0,0,-0.3);
   gunMesh.add(box);
   gunMesh.userData.box = box;
@@ -753,7 +805,7 @@ function buildGunViewmodel(){
 function updateGunViewmodel(){
   const g = GUNS[player.gunKey];
   gunMesh.userData.box.material.color.setHex(g.color);
-  const scaleZ = g.key==='shotgun' ? 0.8 : (g.key==='smg' ? 0.65 : 0.55);
+  const scaleZ = 0.7;
   gunMesh.userData.box.scale.z = scaleZ/0.55;
 }
 function flashMuzzle(){
@@ -826,7 +878,7 @@ function playerFire(){
         }
       }
     }
-    spawnTracer(origin, endPoint, g.key==='shotgun'?0xffb04d:(g.key==='smg'?0x4dd2ff:0xffffff));
+    spawnTracer(origin, endPoint, 0x9de8ff);
   }
   if(hitSomething){ sfxHit(); showHitmarker(); }
 
@@ -888,8 +940,9 @@ function botPosition(ent){
 function updateBot(bot, dt, zoneR){
   if(!bot.alive) return;
   const g = GUNS[bot.gunKey];
+  const diff = DIFFICULTY_SETTINGS[selectedDifficulty-1];
   const myPos = bot.mesh.position;
-  const AGGRO_RANGE = 34;
+  const AGGRO_RANGE = diff.aggro;
 
   // find nearest visible alive target
   let target = null, bestDist = Infinity;
@@ -917,14 +970,16 @@ function updateBot(bot, dt, zoneR){
     else if(dist < desired-4) moveDir = toTarget.clone().negate();
 
     const now = performance.now();
-    if(dist <= g.range && now - bot.lastShot >= g.fireRate){
+    const effectiveFireRate = g.fireRate * diff.fireRateMult;
+    if(dist <= g.range && now - bot.lastShot >= effectiveFireRate){
       bot.lastShot = now;
-      const hitChance = Math.max(0.15, Math.min(0.85, 1 - (dist/g.range)*0.55 - g.spread*1.5));
+      let hitChance = (1 - (dist/g.range)*0.55 - g.spread*1.5) * diff.hitMult;
+      hitChance = Math.max(0.08, Math.min(0.92, hitChance));
       const eyeA = myPos.clone().add(new THREE.Vector3(0,1.2,0));
       const eyeB = botAimPoint(target);
       spawnTracer(eyeA, eyeB, 0xff5d5d);
       if(Math.random() < hitChance){
-        const dmg = g.dmg * (g.pellets>1 ? Math.ceil(g.pellets*0.5) : 1);
+        const dmg = g.dmg * (g.pellets>1 ? Math.ceil(g.pellets*0.5) : 1) * diff.dmgMult;
         target.health -= dmg;
         target.lastDamagedBy = bot;
         if(target.isPlayer){ flashDamage(); sfxHurt(); }
@@ -995,9 +1050,8 @@ window.addEventListener('keydown', e=>{
   keys[e.code] = true;
   if(gameState==='playing'){
     if(e.code==='KeyR') startReload();
-    if(e.code==='Digit1') switchGun('pistol');
-    if(e.code==='Digit2') switchGun('smg');
-    if(e.code==='Digit3') switchGun('shotgun');
+    if(e.code==='Space') handleJumpOrMantle();
+    if(e.code==='KeyC') handleSlide();
   }
 });
 window.addEventListener('keyup', e=>{ keys[e.code]=false; });
@@ -1015,11 +1069,47 @@ window.addEventListener('mouseup', e=>{
   isMouseDown = false;
   if(player) player.semiFired = false;
 });
-function switchGun(key){
-  if(player.gunKey===key) return;
-  player.gunKey = key;
-  player.reloading = false;
-  updateGunViewmodel();
+function handleJumpOrMantle(){
+  if(!player.grounded || player.mantling) return;
+  if(tryMantle()) return;
+  player.velocityY = JUMP_FORCE;
+  player.grounded = false;
+}
+
+function tryMantle(){
+  const origin = new THREE.Vector3(camera.position.x, 0.6, camera.position.z);
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
+  if(dir.lengthSq() < 0.001) return false;
+  const ray = new THREE.Raycaster(origin, dir, 0, 1.15);
+  const hits = ray.intersectObjects(obstacleMeshes, false);
+  if(hits.length === 0) return false;
+  const idx = obstacleMeshes.indexOf(hits[0].object);
+  const ob = obstacles[idx];
+  if(!ob || !ob.height) return false;
+  if(ob.height < MANTLE_MIN_HEIGHT || ob.height > MANTLE_MAX_HEIGHT) return false;
+
+  const spanX = ob.maxX - ob.minX, spanZ = ob.maxZ - ob.minZ;
+  const along = Math.abs(dir.x) > Math.abs(dir.z) ? spanX : spanZ;
+  const vaultDist = Math.min(along, 6) + 1.3;
+
+  player.mantling = true;
+  player.mantleTimer = 0;
+  player.mantleStart = camera.position.clone();
+  player.mantleEnd = camera.position.clone().add(dir.clone().multiplyScalar(vaultDist));
+  player.mantleEnd.y = EYE_HEIGHT;
+  player.mantlePeakY = ob.height + 0.9;
+  player.velocityY = 0;
+  player.sliding = false;
+  return true;
+}
+
+function handleSlide(){
+  if(player.sliding || player.mantling || !player.grounded) return;
+  const moving = keys['KeyW']||keys['KeyA']||keys['KeyS']||keys['KeyD'];
+  if(!moving) return;
+  player.sliding = true;
+  player.slideTimer = 0;
 }
 
 /* ============================================================
@@ -1170,8 +1260,16 @@ function animate(){
   if(gameState==='playing'){
     matchElapsed += dt;
 
+    // slide timer
+    if(player.sliding){
+      player.slideTimer += dt;
+      if(player.slideTimer >= SLIDE_DURATION) player.sliding = false;
+    }
+
     // movement
-    const speed = PLAYER_SPEED * (keys['ShiftLeft']||keys['ShiftRight'] ? SPRINT_MULT : 1);
+    const speed = player.sliding
+      ? PLAYER_SPEED * SLIDE_SPEED_MULT
+      : PLAYER_SPEED * (keys['ShiftLeft']||keys['ShiftRight'] ? SPRINT_MULT : 1);
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward); forward.y=0; forward.normalize();
     const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
@@ -1182,10 +1280,37 @@ function animate(){
     if(keys['KeyD']){ mx+=right.x; mz+=right.z; }
     if(keys['KeyA']){ mx-=right.x; mz-=right.z; }
     const len = Math.hypot(mx,mz);
-    if(len>0.001){
-      mx/=len; mz/=len;
-      const pos = camera.position;
-      tryMove(pos, mx*speed*dt, mz*speed*dt, PLAYER_RADIUS, currentMap.radius*1.5);
+
+    if(player.mantling){
+      player.mantleTimer += dt;
+      const t = Math.min(player.mantleTimer / MANTLE_DURATION, 1);
+      const ease = t*t*(3-2*t); // smoothstep
+      camera.position.x = player.mantleStart.x + (player.mantleEnd.x-player.mantleStart.x)*ease;
+      camera.position.z = player.mantleStart.z + (player.mantleEnd.z-player.mantleStart.z)*ease;
+      const baseY = player.mantleStart.y + (player.mantleEnd.y-player.mantleStart.y)*ease;
+      const arc = Math.sin(t*Math.PI) * Math.max(player.mantlePeakY-EYE_HEIGHT, 0.4);
+      camera.position.y = baseY + arc;
+      if(t >= 1){
+        player.mantling = false;
+        player.grounded = true;
+        player.velocityY = 0;
+        player.eyeHeight = EYE_HEIGHT;
+        player.airOffset = 0;
+      }
+    } else {
+      if(len>0.001){
+        const nx = mx/len, nz = mz/len;
+        const pos = camera.position;
+        tryMove(pos, nx*speed*dt, nz*speed*dt, PLAYER_RADIUS, currentMap.radius*1.5);
+      }
+      // gravity / jump
+      player.velocityY -= GRAVITY*dt;
+      player.airOffset += player.velocityY*dt;
+      if(player.airOffset <= 0){ player.airOffset = 0; player.velocityY = 0; player.grounded = true; }
+      // crouch height (slide) eases toward target
+      const targetEye = player.sliding ? SLIDE_EYE_HEIGHT : EYE_HEIGHT;
+      player.eyeHeight += (targetEye - player.eyeHeight) * Math.min(dt*12, 1);
+      camera.position.y = player.eyeHeight + player.airOffset;
     }
 
     // auto fire for held automatic weapons
