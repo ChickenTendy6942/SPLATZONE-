@@ -801,7 +801,7 @@ function spawnEntities(){
     const bot = {
       isPlayer:false, alive:true, health:100,
       gunKey, lastShot: performance.now() + Math.random()*1000,
-      mesh: meshBundle.group, body: meshBundle.body, nameTag,
+      mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
       wanderTarget:null, name:'BOT '+(i+1), kills:0,
       lastDamagedBy:null
     };
