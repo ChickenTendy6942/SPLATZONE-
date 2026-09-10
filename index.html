@@ -888,7 +888,7 @@ const MANTLE_MAX_HEIGHT = 2.6;
 const MANTLE_MIN_HEIGHT = 0.5;
 const MANTLE_DURATION = 0.38;
 const SIPHON_AMOUNT = 25; // 25% of 100 max HP, healed on elimination
-const PER_KILL_COINS = 8;
+const PER_KILL_COINS = 15;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RADIUS = 1.1;
 const PROJECTILE_GRAVITY = 10; // bullet drop for that real-paintball arc
@@ -1101,6 +1101,7 @@ function addBoxObstacle(x,z,w,d,h,color){
   const mat = new THREE.MeshLambertMaterial({color});
   const mesh = new THREE.Mesh(geo,mat);
   mesh.position.set(x,h/2,z);
+  mesh.castShadow = true; mesh.receiveShadow = true;
   scene.add(mesh);
   obstacleMeshes.push(mesh);
   obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h});
@@ -1157,6 +1158,7 @@ function addBuildingObstacle(x,z,w,d,h,color,style){
   // face order for BoxGeometry: +x,-x,+y(top),-y(bottom),+z,-z
   const mesh = new THREE.Mesh(geo, [sideMat, sideMat, roofMat, roofMat, sideMat, sideMat]);
   mesh.position.set(x,h/2,z);
+  mesh.castShadow = true; mesh.receiveShadow = true;
   scene.add(mesh);
   obstacleMeshes.push(mesh);
   obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h});
@@ -1171,10 +1173,11 @@ function addCactus(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x3f8a4a});
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,2.2,8), mat);
   trunk.position.set(x,1.1,z);
+  trunk.castShadow = true; trunk.receiveShadow = true;
   scene.add(trunk);
   const armGeo = new THREE.CylinderGeometry(0.16,0.19,0.9,8);
-  const armL = new THREE.Mesh(armGeo, mat); armL.position.set(x-0.42,1.5,z); armL.rotation.z=0.55; scene.add(armL);
-  const armR = new THREE.Mesh(armGeo, mat); armR.position.set(x+0.42,1.75,z); armR.rotation.z=-0.55; scene.add(armR);
+  const armL = new THREE.Mesh(armGeo, mat); armL.position.set(x-0.42,1.5,z); armL.rotation.z=0.55; armL.castShadow=true; scene.add(armL);
+  const armR = new THREE.Mesh(armGeo, mat); armR.position.set(x+0.42,1.75,z); armR.rotation.z=-0.55; armR.castShadow=true; scene.add(armR);
   obstacleMeshes.push(trunk);
   obstacles.push({minX:x-0.38, maxX:x+0.38, minZ:z-0.38, maxZ:z+0.38, height:2.2});
 }
@@ -1183,6 +1186,7 @@ function addPillarObstacle(x,z,r,h,color){
   const mat = new THREE.MeshLambertMaterial({color});
   const mesh = new THREE.Mesh(geo,mat);
   mesh.position.set(x,h/2,z);
+  mesh.castShadow = true; mesh.receiveShadow = true;
   scene.add(mesh);
   obstacleMeshes.push(mesh);
   obstacles.push({minX:x-r, maxX:x+r, minZ:z-r, maxZ:z+r, height:h});
@@ -1201,14 +1205,22 @@ function buildScene(mapKey){
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffffff, currentMap.sunI);
   sun.position.set(30,50,20);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048,2048);
+  const shadowSpan = currentMap.radius*1.1;
+  sun.shadow.camera.left = -shadowSpan; sun.shadow.camera.right = shadowSpan;
+  sun.shadow.camera.top = shadowSpan; sun.shadow.camera.bottom = -shadowSpan;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 150;
+  sun.shadow.bias = -0.0015;
   scene.add(sun);
 
   // ground
   const groundGeo = new THREE.CircleGeometry(currentMap.radius*1.6, 48);
   const groundTex = makeGroundTexture(currentMap.ground, currentMap.grid);
-  const groundMat = new THREE.MeshLambertMaterial({map:groundTex});
+  const groundMat = new THREE.MeshStandardMaterial({map:groundTex, roughness:0.95, metalness:0});
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
   scene.add(ground);
 
   // boundary wall (visual only, keeps things feeling contained)
@@ -1309,16 +1321,17 @@ function hasLineOfSight(fromPos, toPos){
 function buildMannequinVisual(skin){
   const group = new THREE.Group();
   const shinyOpts = {metalness:0.65, roughness:0.22, emissive:new THREE.Color(skin.vest||0xffffff), emissiveIntensity:0.12};
-  const limbMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.arms, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.arms});
-  const legMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.legs, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.legs});
+  const matteOpts = {roughness:0.85, metalness:0.02};
+  const limbMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.arms, ...shinyOpts}) : new THREE.MeshStandardMaterial({color:skin.arms, ...matteOpts});
+  const legMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.legs, ...shinyOpts}) : new THREE.MeshStandardMaterial({color:skin.legs, ...matteOpts});
   const vestMat = skin.torsoTexture
-    ? new THREE.MeshLambertMaterial({map:new THREE.TextureLoader().load(skin.torsoTexture)})
-    : (skin.shiny ? new THREE.MeshStandardMaterial({color:skin.vest, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.vest}));
-  const headMat = new THREE.MeshLambertMaterial({color: skin.helmet==='llamahead' ? (skin.accent||0xc9a8e0) : 0xffe0c2});
+    ? new THREE.MeshStandardMaterial({map:new THREE.TextureLoader().load(skin.torsoTexture), ...matteOpts})
+    : (skin.shiny ? new THREE.MeshStandardMaterial({color:skin.vest, ...shinyOpts}) : new THREE.MeshStandardMaterial({color:skin.vest, ...matteOpts}));
+  const headMat = new THREE.MeshStandardMaterial({color: skin.helmet==='llamahead' ? (skin.accent||0xc9a8e0) : 0xffe0c2, roughness:0.7, metalness:0});
   const accentMat = new THREE.MeshBasicMaterial({color:skin.accent||0xffffff});
-  const trimMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.accent||skin.vest, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.accent||skin.vest});
+  const trimMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.accent||skin.vest, ...shinyOpts}) : new THREE.MeshStandardMaterial({color:skin.accent||skin.vest, ...matteOpts});
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2,10,10), headMat);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16), headMat);
   head.position.y = 1.68;
   group.add(head);
 
@@ -1333,8 +1346,9 @@ function buildMannequinVisual(skin){
     group.add(mouth);
   }
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.46,0.62,0.28), vestMat);
-  torso.position.y = 1.2;
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.32, 4, 12), vestMat);
+  torso.position.y = 1.22;
+  torso.scale.set(1.35, 1, 0.85);
   group.add(torso);
 
   function limb(geo, mat, x, pivotY, hangLen){
@@ -1346,10 +1360,10 @@ function buildMannequinVisual(skin){
     group.add(pivot);
     return pivot;
   }
-  const armGeo = new THREE.CylinderGeometry(0.07,0.07,0.56,8);
-  const legGeo = new THREE.CylinderGeometry(0.095,0.095,0.78,8);
-  const armL = limb(armGeo, limbMat, -0.32, 1.42, 0.56);
-  const armR = limb(armGeo, limbMat, 0.32, 1.42, 0.56);
+  const armGeo = new THREE.CylinderGeometry(0.055,0.075,0.56,10);
+  const legGeo = new THREE.CylinderGeometry(0.075,0.105,0.78,10);
+  const armL = limb(armGeo, limbMat, -0.30, 1.40, 0.56);
+  const armR = limb(armGeo, limbMat, 0.30, 1.40, 0.56);
   const legL = limb(legGeo, legMat, -0.13, 0.85, 0.78);
   const legR = limb(legGeo, legMat, 0.13, 0.85, 0.78);
 
@@ -1479,6 +1493,7 @@ function buildMannequinVisual(skin){
     group.add(cape);
   }
 
+  group.traverse(obj=>{ if(obj.isMesh){ obj.castShadow = true; obj.receiveShadow = true; } });
   return {group, head, torso, armL, armR, legL, legR};
 }
 
@@ -1531,7 +1546,8 @@ function spawnEntities(){
     sliding:false, slideTimer:0,
     mantling:false, mantleTimer:0, mantleStart:null, mantleEnd:null, mantlePeakY:0,
     aiming:false, crouching:false, currentFov:HIP_FOV,
-    sprinting:false, sprintMeter:TAC_SPRINT_DURATION, sprintCooldown:0
+    sprinting:false, sprintMeter:TAC_SPRINT_DURATION, sprintCooldown:0,
+    velX:0, velZ:0
   };
   entities.push(player);
 
@@ -1659,11 +1675,13 @@ function playerFire(){
   camera.getWorldDirection(baseDir);
   const spread = player.aiming ? g.spread*AIM_SPREAD_MULT : g.spread;
 
+  const shotDirs = [];
   for(let p=0;p<g.pellets;p++){
     const dir = getSpreadDir(baseDir, spread);
     spawnProjectile(origin, dir, g.dmg, g.range, player, getEquippedGunColor());
-    if(mpActive) mpBroadcastShot(origin, dir, g.dmg, g.range, getEquippedGunColor());
+    shotDirs.push(dir);
   }
+  if(mpActive) mpBroadcastShot(origin, shotDirs, g.dmg, g.range, getEquippedGunColor());
 
   if(player.ammo[player.gunKey] <= 0) startReload();
 }
@@ -2187,6 +2205,11 @@ function startMatch(mapKey){
   renderer = new THREE.WebGLRenderer({canvas:document.getElementById('gameCanvas'), antialias:true});
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
 
   controls = new PointerLockControls(camera, document.body);
 
@@ -2249,7 +2272,7 @@ function endMatch(won, killer){
   document.getElementById('statKills').textContent = player.kills;
   document.getElementById('statPlace').textContent = won ? '#1' : ('#'+(botsStillAlive+1));
 
-  const coinsEarned = Math.round((10 + (won ? 40 : 0)) * currentCoinMult());
+  const coinsEarned = Math.round((20 + (won ? 75 : 0)) * currentCoinMult());
   save.coins += coinsEarned;
   saveGame();
   const coinEl = document.getElementById('statCoins');
@@ -2471,10 +2494,15 @@ function animate(){
         player.airOffset = 0;
       }
     } else {
-      if(len>0.001){
-        const nx = mx/len, nz = mz/len;
+      const desiredVX = (len>0.001 ? mx/len : 0) * speed;
+      const desiredVZ = (len>0.001 ? mz/len : 0) * speed;
+      const accelRate = len>0.001 ? 12 : 16; // accelerate a bit slower than we brake, feels more natural
+      const accelT = Math.min(accelRate*dt, 1);
+      player.velX += (desiredVX - player.velX) * accelT;
+      player.velZ += (desiredVZ - player.velZ) * accelT;
+      if(Math.hypot(player.velX, player.velZ) > 0.01){
         const pos = camera.position;
-        tryMove(pos, nx*speed*dt, nz*speed*dt, PLAYER_RADIUS, currentMap.radius*1.5);
+        tryMove(pos, player.velX*dt, player.velZ*dt, PLAYER_RADIUS, currentMap.radius*1.5);
       }
       // gravity / jump
       player.velocityY -= GRAVITY*dt;
@@ -2520,7 +2548,7 @@ function animate(){
     for(const e of entities){
       if(e.isPlayer || !e.alive) continue;
       if(e.isRemote){
-        const lerpT = Math.min(dt*12, 1);
+        const lerpT = Math.min(dt*18, 1);
         e.mesh.position.x += (e.netTargetX - e.mesh.position.x) * lerpT;
         e.mesh.position.z += (e.netTargetZ - e.mesh.position.z) * lerpT;
         e.mesh.rotation.y = e.netTargetRotY;
@@ -2552,9 +2580,9 @@ function animate(){
     if(!mpActive) drawMinimap(zr);
 
     if(mpActive){
-      // broadcast our position ~10x/sec
+      // broadcast our position ~20x/sec
       mpStateBroadcastTimer += dt;
-      if(mpStateBroadcastTimer >= 0.1 && mpConn && mpConn.open){
+      if(mpStateBroadcastTimer >= 0.05 && mpConn && mpConn.open){
         mpStateBroadcastTimer = 0;
         const fdir = new THREE.Vector3(); camera.getWorldDirection(fdir);
         const rotY = Math.atan2(fdir.x, fdir.z);
@@ -3252,13 +3280,16 @@ function mpUpdateScoreHud(){
 function mpReceiveShot(msg){
   if(!mpRemoteEntity || !scene) return;
   const origin = new THREE.Vector3(msg.ox, msg.oy, msg.oz);
-  const dir = new THREE.Vector3(msg.dx, msg.dy, msg.dz);
-  spawnProjectile(origin, dir, msg.dmg, msg.range, mpRemoteEntity, msg.color);
+  (msg.dirs||[]).forEach(d=>{
+    const dir = new THREE.Vector3(d[0], d[1], d[2]);
+    spawnProjectile(origin, dir, msg.dmg, msg.range, mpRemoteEntity, msg.color);
+  });
 }
 
-function mpBroadcastShot(origin, dir, dmg, range, color){
+function mpBroadcastShot(origin, dirs, dmg, range, color){
   if(!mpActive || !mpConn || !mpConn.open) return;
-  mpConn.send({type:'shot', ox:origin.x, oy:origin.y, oz:origin.z, dx:dir.x, dy:dir.y, dz:dir.z, dmg, range, color});
+  const dirList = dirs.map(d=>[d.x,d.y,d.z]);
+  mpConn.send({type:'shot', ox:origin.x, oy:origin.y, oz:origin.z, dirs:dirList, dmg, range, color});
 }
 
 function handleMultiplayerDeath(ent, killer){
