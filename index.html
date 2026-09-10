@@ -55,9 +55,7 @@
     padding:22px; margin-bottom:18px;
   }
   .panel h2{font-size:15px; letter-spacing:.5px; color:#e8e8f0; margin-bottom:14px; font-family:'Inter',sans-serif; font-weight:800;}
-  .mapGrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
-  @media (max-width:860px){.mapGrid{grid-template-columns:1fr 1fr;}}
-  @media (max-width:560px){.mapGrid{grid-template-columns:1fr;}}
+  .mapGrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px;}
   .mapCard{
     border:2px solid var(--line); border-radius:8px; cursor:pointer; overflow:hidden;
     background:#0f0f16; transition:border-color .15s, transform .15s;
@@ -68,6 +66,7 @@
   .mapPreview.sandlot{background:linear-gradient(160deg,#e8c98a,#b5652e);}
   .mapPreview.ruins{background:linear-gradient(160deg,#5a5468,#242028);}
   .mapPreview.skyline{background:linear-gradient(160deg,#ffb877,#4a4f5c);}
+  .mapPreview.dustgulch{background:linear-gradient(160deg,#ffb15c,#8a5a34);}
   .mapInfo{padding:10px 14px 14px;}
   .mapInfo b{display:block; font-size:15px; margin-bottom:4px;}
   .mapInfo span{font-size:12.5px; color:#9a9ab0;}
@@ -223,6 +222,8 @@
     padding:10px 20px; border-radius:6px; cursor:pointer;
   }
   .lobbyBtn.secondary{background:#fff; color:#3c4043;}
+  .lobbyBtn.dailyAvailable{animation:dailyPulse 1.4s infinite;}
+  @keyframes dailyPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,213,77,.6);}50%{box-shadow:0 0 0 8px rgba(255,213,77,0);}}
   #profileArea{margin-top:14px;}
   #googleSetupNote{display:none; font-size:11px; color:#77778a; margin-top:8px; max-width:340px; line-height:1.5;}
   #profileSignedIn{display:flex; align-items:center; gap:10px;}
@@ -236,6 +237,21 @@
   #settingsScreen{
     display:none; position:fixed; inset:0; z-index:55; background:var(--bg); overflow-y:auto;
   }
+  #dailyScreen{
+    display:none; position:fixed; inset:0; z-index:58; background:rgba(8,8,14,.94); overflow-y:auto;
+  }
+  .wheelStage{position:relative; width:260px; height:260px; margin:20px auto;}
+  .wheelDial{
+    width:100%; height:100%; border-radius:50%; border:6px solid #1a1a22;
+    box-shadow:0 0 0 3px #3a3a48, 0 10px 30px rgba(0,0,0,.5);
+    transform:rotate(0deg);
+  }
+  .wheelPointer{
+    position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
+    border-top:20px solid #fff; z-index:2; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));
+  }
+  .wheelResult{font-family:'Archivo Black'; font-size:20px; color:var(--lime); min-height:28px; margin-top:6px;}
   .shopPreviewStage{
     width:260px; height:260px; margin:0 auto 6px; border-radius:12px; overflow:hidden; position:relative;
     background:radial-gradient(circle at 50% 30%, #2a2a3e, #0f0f16); border:1px solid var(--line);
@@ -312,6 +328,7 @@
           <div class="equippedLine">Gun rig: <b id="equippedGunName">Stock</b></div>
           <button id="openShopBtn" class="lobbyBtn">OPEN SHOP</button>
           <button id="openSettingsBtn" class="lobbyBtn secondary">SETTINGS</button>
+          <button id="openDailyBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#ffd54d,#ff9d3d); color:#2a1c00;">🎁 DAILY REWARD</button>
 
           <div id="profileArea">
             <div id="profileSignedOut">
@@ -349,6 +366,13 @@
           <div class="mapInfo">
             <b>Skyline Towers</b>
             <span>A dense downtown block of tall buildings and streets. Verticality, tight corners, close-quarters chaos.</span>
+          </div>
+        </div>
+        <div class="mapCard" data-map="dustgulch">
+          <div class="mapPreview dustgulch">DUST GULCH</div>
+          <div class="mapInfo">
+            <b>Dust Gulch</b>
+            <span>A wild-west desert town with a train cart in the middle (mantle over it with Space!), saloons, rocks and cacti.</span>
           </div>
         </div>
       </div>
@@ -424,6 +448,25 @@
       <button id="closeSettingsBtn" class="lobbyBtn">BACK TO LOBBY</button>
     </div>
     <p class="hint">Aim Down Sights is fixed to Right Mouse Button.</p>
+  </div>
+</div>
+
+<div id="dailyScreen">
+  <div class="shopWrap" style="text-align:center;">
+    <div class="shopHeader" style="justify-content:center;">
+      <h1 class="display">DAILY REWARD</h1>
+    </div>
+    <p id="dailyStatusText" class="hint">Spin the wheel — one free spin per day!</p>
+    <div class="wheelStage">
+      <div class="wheelPointer"></div>
+      <div id="wheelDial" class="wheelDial"></div>
+    </div>
+    <p id="wheelResultText" class="wheelResult"></p>
+    <div class="startRow" style="margin-top:18px; gap:14px;">
+      <button id="spinWheelBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#ffd54d,#ff9d3d); color:#2a1c00;">SPIN</button>
+      <button id="closeDailyBtn" class="lobbyBtn secondary">BACK TO LOBBY</button>
+    </div>
+    <p class="hint">Prizes: 50 · 100 · 150 · 200 · 300 · 500 · 750 · 1500 coins</p>
   </div>
 </div>
 
@@ -539,10 +582,10 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
    CONFIG
    ============================================================ */
 const GUNS = {
-  starter: { key:'starter', name:'Starter Blaster', color:0x2c2f36, dmg:13, mag:26, fireRate:150, reload:1500, range:40, spread:0.032, pellets:1, auto:true,  cost:0,    rarity:'Common' },
-  smg:     { key:'smg',     name:'Rapidfire SMG',   color:0x274a8a, dmg:9,  mag:34, fireRate:85,  reload:1500, range:32, spread:0.055, pellets:1, auto:true,  cost:900,  rarity:'Rare' },
-  shotgun: { key:'shotgun', name:'Power Shotgun',   color:0x8a5a1f, dmg:10, mag:6,  fireRate:700, reload:1800, range:15, spread:0.15,  pellets:7, auto:false, cost:1600, rarity:'Epic' },
-  sniper:  { key:'sniper',  name:'Deadeye Sniper',  color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:70, spread:0.006, pellets:1, auto:false, cost:4200, rarity:'Legendary' }
+  starter: { key:'starter', name:'Starter Blaster', color:0x2c2f36, dmg:13, mag:26, fireRate:150, reload:1500, range:40, spread:0.032, pellets:1, auto:true,  cost:0,     rarity:'Common' },
+  smg:     { key:'smg',     name:'Rapidfire SMG',   color:0x274a8a, dmg:9,  mag:34, fireRate:85,  reload:1500, range:32, spread:0.055, pellets:1, auto:true,  cost:5000,  rarity:'Rare' },
+  shotgun: { key:'shotgun', name:'Power Shotgun',   color:0x8a5a1f, dmg:10, mag:6,  fireRate:700, reload:1800, range:15, spread:0.15,  pellets:7, auto:false, cost:12000, rarity:'Epic' },
+  sniper:  { key:'sniper',  name:'Deadeye Sniper',  color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:70, spread:0.006, pellets:1, auto:false, cost:30000, rarity:'Legendary' }
 };
 const WEAPON_KEYS = ['starter','smg','shotgun','sniper'];
 
@@ -555,7 +598,10 @@ const DIFFICULTY_SETTINGS = [
 let selectedDifficulty = 2; // 1-4
 function currentCoinMult(){
   const d = DIFFICULTY_SETTINGS[selectedDifficulty-1];
-  return d ? d.coinMult : 1;
+  const diffMult = d ? d.coinMult : 1;
+  const sizeT = Math.max(0, Math.min(1, (selectedPlayerCount-2) / (15-2)));
+  const sizeMult = 0.2 + sizeT*0.8; // 20% payout at 2 players, up to 100% at 15
+  return diffMult * sizeMult;
 }
 
 const SKINS = [
@@ -566,9 +612,10 @@ const SKINS = [
   {id:'inferno', name:'Inferno Titan', cost:1400, rarity:'Epic',      vest:0xff5b1f, legs:0x241211, arms:0xd42e0e, helmet:'none',  accessory:'backpack', accent:0xffc23d},
   {id:'ronin',   name:'Cyber Ronin',   cost:2200, rarity:'Epic',      vest:0x171933, legs:0x0c0c14, arms:0x1c1f3a, helmet:'visor', accessory:'blade',    accent:0x39ff8f},
   {id:'golden',  name:'Golden Legend', cost:5000, rarity:'Legendary', vest:0xffd54d, legs:0xd9ac3f, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff6d9},
-  {id:'lootllama', name:'Loot Llama', cost:1000, rarity:'Epic',      vest:0x8a6fd4, legs:0x4a3a7a, arms:0x8a6fd4, helmet:'llamahead', accessory:'backpack', accent:0xc9a8e0}
+  {id:'lootllama', name:'Loot Llama', cost:1000, rarity:'Epic',      vest:0x8a6fd4, legs:0x4a3a7a, arms:0x8a6fd4, helmet:'llamahead', accessory:'backpack', accent:0xc9a8e0},
+  {id:'radiantgold', name:'Radiant Gold', cost:1000000, rarity:'Mythic', vest:0xffe066, legs:0xe6b800, arms:0xffe066, helmet:'crown', accessory:'cape', accent:0xfff6c2, shiny:true}
 ];
-const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d' };
+const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d', Mythic:'#fff6c2' };
 
 const GUN_SKINS = [
   {id:'stock',    name:'Stock',       color:0x2c2f36, cost:0},
@@ -586,11 +633,11 @@ function loadSave(){
       return Object.assign({
         coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'],
         equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter',
-        profileName:null, profilePic:null
+        profileName:null, profilePic:null, lastDailyClaim:null
       }, parsed);
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter', profileName:null, profilePic:null };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter', profileName:null, profilePic:null, lastDailyClaim:null };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
@@ -681,6 +728,25 @@ const MAPS = {
     ],
     pillarRing:null,
     medkitSpots:[{x:0,z:0},{x:-14,z:0},{x:14,z:0},{x:0,z:-14},{x:0,z:14}]
+  },
+  dustgulch: {
+    name:'Dust Gulch', radius:54, buildingStyle:true, facadeStyle:'wood',
+    sky:0xffb15c, fog:0xffb15c, ground:0xc98a52, grid:0xa8703f,
+    ambient:0xffe0b0, ambientI:0.95, sunI:1.05,
+    boxes:[
+      {x:0,z:0,w:10,d:4,h:2.4,c:0x6b3a2a},{x:0,z:6.5,w:8,d:4,h:2.2,c:0x5a3122},
+      {x:-24,z:-16,w:9,d:7,h:5,c:0x8a5a34},{x:24,z:-16,w:8,d:6,h:4.5,c:0x8a5a34},
+      {x:-24,z:16,w:7,d:6,h:4,c:0x9a6a3a},{x:24,z:16,w:7,d:6,h:4,c:0x9a6a3a},
+      {x:-36,z:0,w:5,d:5,h:3.5,c:0x8a5a34},{x:36,z:0,w:5,d:5,h:3.5,c:0x8a5a34}
+    ],
+    pillars:[
+      {x:-32,z:-24,r:3,h:3,c:0xb5673a},{x:32,z:26,r:2.5,h:2.5,c:0xa8592e},
+      {x:0,z:-36,r:3.5,h:4,c:0xb5673a},{x:-14,z:32,r:2.2,h:2.2,c:0xa8592e}
+    ],
+    cacti:[
+      {x:-16,z:-6},{x:16,z:8},{x:-8,z:24},{x:10,z:-26},{x:30,z:-6},{x:-30,z:10}
+    ],
+    medkitSpots:[{x:0,z:-6},{x:-24,z:0},{x:24,z:0},{x:0,z:24},{x:0,z:-24}]
   }
 };
 
@@ -718,7 +784,7 @@ const MANTLE_MAX_HEIGHT = 2.6;
 const MANTLE_MIN_HEIGHT = 0.5;
 const MANTLE_DURATION = 0.38;
 const SIPHON_AMOUNT = 25; // 25% of 100 max HP, healed on elimination
-const PER_KILL_COINS = 15;
+const PER_KILL_COINS = 8;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RADIUS = 1.1;
 const PROJECTILE_GRAVITY = 10; // bullet drop for that real-paintball arc
@@ -940,8 +1006,30 @@ function makeBuildingFacadeTexture(baseColorHex){
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   return tex;
 }
-function addBuildingObstacle(x,z,w,d,h,color){
-  const tex = makeBuildingFacadeTexture(color);
+function makeWoodPlankTexture(baseColorHex){
+  const c = document.createElement('canvas'); c.width=128; c.height=256;
+  const ctx = c.getContext('2d');
+  const base = '#'+baseColorHex.toString(16).padStart(6,'0');
+  ctx.fillStyle = base;
+  ctx.fillRect(0,0,128,256);
+  ctx.strokeStyle = 'rgba(30,16,10,0.45)';
+  ctx.lineWidth = 3;
+  for(let y=0; y<256; y+=17){
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(128,y); ctx.stroke();
+  }
+  for(let x=0; x<128; x+=32){
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,256); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  for(let i=0;i<40;i++){
+    ctx.fillRect(Math.random()*128, Math.random()*256, 8+Math.random()*14, 1.5);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function addBuildingObstacle(x,z,w,d,h,color,style){
+  const tex = style==='wood' ? makeWoodPlankTexture(color) : makeBuildingFacadeTexture(color);
   tex.repeat.set(Math.max(1,Math.round(w/3.2)), Math.max(1,Math.round(h/3.6)));
   const sideMat = new THREE.MeshLambertMaterial({map:tex});
   const roofMat = new THREE.MeshLambertMaterial({color:new THREE.Color(color).multiplyScalar(0.55)});
@@ -953,11 +1041,22 @@ function addBuildingObstacle(x,z,w,d,h,color){
   obstacleMeshes.push(mesh);
   obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h});
 
-  if(Math.random() < 0.55){
+  if(style!=='wood' && Math.random() < 0.55){
     const unit = new THREE.Mesh(new THREE.BoxGeometry(w*0.28, 0.6, d*0.28), roofMat);
     unit.position.set(x + (Math.random()-0.5)*w*0.3, h+0.3, z + (Math.random()-0.5)*d*0.3);
     scene.add(unit);
   }
+}
+function addCactus(x,z){
+  const mat = new THREE.MeshLambertMaterial({color:0x3f8a4a});
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,2.2,8), mat);
+  trunk.position.set(x,1.1,z);
+  scene.add(trunk);
+  const armGeo = new THREE.CylinderGeometry(0.16,0.19,0.9,8);
+  const armL = new THREE.Mesh(armGeo, mat); armL.position.set(x-0.42,1.5,z); armL.rotation.z=0.55; scene.add(armL);
+  const armR = new THREE.Mesh(armGeo, mat); armR.position.set(x+0.42,1.75,z); armR.rotation.z=-0.55; scene.add(armR);
+  obstacleMeshes.push(trunk);
+  obstacles.push({minX:x-0.38, maxX:x+0.38, minZ:z-0.38, maxZ:z+0.38, height:2.2});
 }
 function addPillarObstacle(x,z,r,h,color){
   const geo = new THREE.CylinderGeometry(r,r*1.1,h,10);
@@ -1001,7 +1100,7 @@ function buildScene(mapKey){
 
   obstacles = []; obstacleMeshes = [];
   currentMap.boxes.forEach(b=>{
-    if(currentMap.buildingStyle) addBuildingObstacle(b.x,b.z,b.w,b.d,b.h,b.c);
+    if(currentMap.buildingStyle) addBuildingObstacle(b.x,b.z,b.w,b.d,b.h,b.c,currentMap.facadeStyle||'windows');
     else addBoxObstacle(b.x,b.z,b.w,b.d,b.h,b.c);
   });
   if(currentMap.pillarRing){
@@ -1011,6 +1110,8 @@ function buildScene(mapKey){
       addPillarObstacle(Math.cos(a)*pr.radius, Math.sin(a)*pr.radius, pr.pRadius, pr.height, pr.c);
     }
   }
+  (currentMap.pillars||[]).forEach(p=>addPillarObstacle(p.x,p.z,p.r,p.h,p.c));
+  (currentMap.cacti||[]).forEach(c=>addCactus(c.x,c.z));
 
   // zone wall (shrinking gas)
   const zoneGeo = new THREE.CylinderGeometry(1,1,50,40,1,true);
@@ -1087,14 +1188,15 @@ function hasLineOfSight(fromPos, toPos){
    ============================================================ */
 function buildMannequinVisual(skin){
   const group = new THREE.Group();
-  const limbMat = new THREE.MeshLambertMaterial({color:skin.arms});
-  const legMat = new THREE.MeshLambertMaterial({color:skin.legs});
+  const shinyOpts = {metalness:0.65, roughness:0.22, emissive:new THREE.Color(skin.vest||0xffffff), emissiveIntensity:0.12};
+  const limbMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.arms, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.arms});
+  const legMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.legs, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.legs});
   const vestMat = skin.torsoTexture
     ? new THREE.MeshLambertMaterial({map:new THREE.TextureLoader().load(skin.torsoTexture)})
-    : new THREE.MeshLambertMaterial({color:skin.vest});
+    : (skin.shiny ? new THREE.MeshStandardMaterial({color:skin.vest, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.vest}));
   const headMat = new THREE.MeshLambertMaterial({color: skin.helmet==='llamahead' ? (skin.accent||0xc9a8e0) : 0xffe0c2});
   const accentMat = new THREE.MeshBasicMaterial({color:skin.accent||0xffffff});
-  const trimMat = new THREE.MeshLambertMaterial({color:skin.accent||skin.vest});
+  const trimMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.accent||skin.vest, ...shinyOpts}) : new THREE.MeshLambertMaterial({color:skin.accent||skin.vest});
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.2,10,10), headMat);
   head.position.y = 1.68;
@@ -1162,6 +1264,20 @@ function buildMannequinVisual(skin){
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.23,10,10), new THREE.MeshBasicMaterial({color:skin.accent, transparent:true, opacity:0.18}));
     glow.position.y = 1.68;
     group.add(glow);
+  } else if(skin.rarity==='Mythic'){
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.26,10,10), new THREE.MeshBasicMaterial({color:skin.accent, transparent:true, opacity:0.3}));
+    glow.position.y = 1.68;
+    group.add(glow);
+    const bodyGlow = new THREE.Mesh(new THREE.SphereGeometry(0.42,10,10), new THREE.MeshBasicMaterial({color:skin.accent, transparent:true, opacity:0.1}));
+    bodyGlow.position.y = 1.15;
+    bodyGlow.scale.set(1,1.5,1);
+    group.add(bodyGlow);
+    for(let i=0;i<6;i++){
+      const sparkle = new THREE.Mesh(new THREE.SphereGeometry(0.025,6,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+      const a = (i/6)*Math.PI*2;
+      sparkle.position.set(Math.sin(a)*0.32, 1.2+Math.cos(a*2)*0.35, Math.cos(a)*0.28);
+      group.add(sparkle);
+    }
   }
 
   // ---- helmet / head gear ----
@@ -1331,10 +1447,6 @@ function spawnEntities(){
 let gunMesh, muzzleFlash;
 function buildGunViewmodel(){
   gunMesh = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.14,0.55), new THREE.MeshLambertMaterial({color:GUNS.starter.color}));
-  box.position.set(0,0,-0.3);
-  gunMesh.add(box);
-  gunMesh.userData.box = box;
   gunMesh.position.set(0.28,-0.28,-0.55);
   camera.add(gunMesh);
   scene.add(camera);
@@ -1345,9 +1457,11 @@ function buildGunViewmodel(){
   gunMesh.add(muzzleFlash);
 }
 function updateGunViewmodel(){
-  gunMesh.userData.box.material.color.setHex(getEquippedGunColor());
-  const scaleZ = 0.7;
-  gunMesh.userData.box.scale.z = scaleZ/0.55;
+  for(let i=gunMesh.children.length-1; i>=0; i--){
+    if(gunMesh.children[i] !== muzzleFlash) gunMesh.remove(gunMesh.children[i]);
+  }
+  const model = buildPaintballGunModel(getEquippedGunColor(), player.gunKey);
+  gunMesh.add(model);
 }
 function flashMuzzle(){
   muzzleFlash.material.opacity = 1;
@@ -1915,7 +2029,7 @@ function endMatch(won, killer){
   document.getElementById('statKills').textContent = player.kills;
   document.getElementById('statPlace').textContent = won ? '#1' : ('#'+(botsStillAlive+1));
 
-  const coinsEarned = Math.round((20 + (won ? 75 : 0)) * currentCoinMult());
+  const coinsEarned = Math.round((10 + (won ? 40 : 0)) * currentCoinMult());
   save.coins += coinsEarned;
   saveGame();
   const coinEl = document.getElementById('statCoins');
@@ -2278,29 +2392,71 @@ function showSkinPreview(skinDef){
   setPreviewCamera('mannequin');
   document.getElementById('shopPreviewLabel').textContent = skinDef.name;
 }
-function buildGunPreviewMesh(shapeKey, colorHex){
+function buildPaintballGunModel(colorHex, shapeKey){
   const group = new THREE.Group();
   const mat = new THREE.MeshLambertMaterial({color:colorHex});
-  let dims;
-  if(shapeKey==='sniper') dims=[0.09,0.09,0.95];
-  else if(shapeKey==='shotgun') dims=[0.2,0.2,0.5];
-  else if(shapeKey==='smg') dims=[0.12,0.16,0.4];
-  else dims=[0.14,0.16,0.55];
-  const body = new THREE.Mesh(new THREE.BoxGeometry(dims[0],dims[1],dims[2]), mat);
+  const darkMat = new THREE.MeshLambertMaterial({color:0x1c1c24});
+
+  let barrelLen = 0.42, bodyLen = 0.26;
+  if(shapeKey==='sniper'){ barrelLen=0.78; bodyLen=0.3; }
+  else if(shapeKey==='shotgun'){ barrelLen=0.3; bodyLen=0.3; }
+  else if(shapeKey==='smg'){ barrelLen=0.26; bodyLen=0.22; }
+
+  // receiver body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.11,bodyLen), mat);
   group.add(body);
+  // barrel
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.022,barrelLen,8), mat);
+  barrel.rotation.x = Math.PI/2;
+  barrel.position.set(0,0.01,-(bodyLen/2+barrelLen/2));
+  group.add(barrel);
+  // muzzle tip
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.026,0.026,0.025,8), darkMat);
+  tip.rotation.x = Math.PI/2;
+  tip.position.set(0,0.01,-(bodyLen/2+barrelLen));
+  group.add(tip);
+  // hopper/loader on top - the classic paintball-gun signature - or a scope for the sniper
   if(shapeKey==='sniper'){
-    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.22,8), new THREE.MeshLambertMaterial({color:0x14141a}));
-    scope.rotation.z = Math.PI/2;
-    scope.position.set(0,0.09,-0.05);
+    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.024,0.024,0.24,8), darkMat);
+    scope.rotation.x = Math.PI/2;
+    scope.position.set(0,0.1,-0.02);
     group.add(scope);
+    const lensF = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.015,8), new THREE.MeshBasicMaterial({color:0x3fd6ff}));
+    lensF.rotation.x = Math.PI/2;
+    lensF.position.set(0,0.1,-0.14);
+    group.add(lensF);
+  } else {
+    const hopperGeo = shapeKey==='shotgun'
+      ? new THREE.CylinderGeometry(0.06,0.075,0.1,10)
+      : new THREE.CylinderGeometry(0.05,0.065,0.095,10);
+    const hopper = new THREE.Mesh(hopperGeo, darkMat);
+    hopper.position.set(0,0.095,0.03);
+    group.add(hopper);
+    const hopperLid = new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.02,10), mat);
+    hopperLid.position.set(0,0.145,0.03);
+    group.add(hopperLid);
   }
   if(shapeKey==='shotgun'){
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.35,8), mat);
-    barrel.rotation.z = Math.PI/2;
-    barrel.position.set(0,0,dims[2]/2+0.1);
-    group.add(barrel);
+    const barrel2 = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.024,barrelLen*0.85,8), mat);
+    barrel2.rotation.x = Math.PI/2;
+    barrel2.position.set(0,-0.025,-(bodyLen/2+barrelLen*0.42));
+    group.add(barrel2);
   }
+  // trigger guard + grip
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.045,0.15,0.06), darkMat);
+  grip.position.set(0,-0.11,0.06);
+  grip.rotation.x = 0.28;
+  group.add(grip);
+  // air tank behind the grip
+  const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.032,0.032,0.24,8), darkMat);
+  tank.rotation.x = Math.PI/2;
+  tank.position.set(0,-0.05,0.19);
+  group.add(tank);
+
   return group;
+}
+function buildGunPreviewMesh(shapeKey, colorHex){
+  return buildPaintballGunModel(colorHex, shapeKey);
 }
 function showGunPreview(shapeKey, colorHex, label){
   if(!shopPreviewScene) return;
@@ -2527,6 +2683,82 @@ document.getElementById('resetKeybindsBtn').addEventListener('click', ()=>{
 });
 
 /* ============================================================
+   DAILY REWARD / SPIN WHEEL
+   ============================================================ */
+const WHEEL_SEGMENTS = [
+  {coins:50,   weight:25, color:'#ff2d78'},
+  {coins:100,  weight:20, color:'#2de6ff'},
+  {coins:150,  weight:15, color:'#c6ff2d'},
+  {coins:200,  weight:15, color:'#ffb03d'},
+  {coins:300,  weight:10, color:'#b14dff'},
+  {coins:500,  weight:8,  color:'#ff6b4d'},
+  {coins:750,  weight:5,  color:'#4d9fff'},
+  {coins:1500, weight:2,  color:'#ffd54d'}
+];
+const WHEEL_TOTAL_WEIGHT = WHEEL_SEGMENTS.reduce((s,x)=>s+x.weight,0);
+let wheelSegmentsComputed = (function(){
+  let acc = 0;
+  return WHEEL_SEGMENTS.map(seg=>{
+    const start = acc/WHEEL_TOTAL_WEIGHT*360;
+    acc += seg.weight;
+    const end = acc/WHEEL_TOTAL_WEIGHT*360;
+    return Object.assign({}, seg, {start, end});
+  });
+})();
+function todayString(){ return new Date().toDateString(); }
+function dailyAvailable(){ return save.lastDailyClaim !== todayString(); }
+function renderDailyScreen(){
+  const wheelEl = document.getElementById('wheelDial');
+  const gradient = wheelSegmentsComputed.map(s=> s.color+' '+s.start+'deg '+s.end+'deg').join(', ');
+  wheelEl.style.background = 'conic-gradient(from 0deg, '+gradient+')';
+  wheelEl.style.transition = 'none';
+  wheelEl.style.transform = 'rotate(0deg)';
+  document.getElementById('wheelResultText').textContent = '';
+  const spinBtn = document.getElementById('spinWheelBtn');
+  const statusText = document.getElementById('dailyStatusText');
+  if(dailyAvailable()){
+    spinBtn.disabled = false;
+    spinBtn.textContent = 'SPIN';
+    statusText.textContent = 'Spin the wheel — one free spin per day!';
+  } else {
+    spinBtn.disabled = true;
+    spinBtn.textContent = 'ALREADY CLAIMED';
+    statusText.textContent = "You've already claimed today's reward. Come back tomorrow!";
+  }
+}
+function spinDailyWheel(){
+  if(!dailyAvailable()) return;
+  const spinBtn = document.getElementById('spinWheelBtn');
+  spinBtn.disabled = true;
+  const angle = Math.random()*360;
+  const seg = wheelSegmentsComputed.find(s=>angle>=s.start && angle<s.end) || wheelSegmentsComputed[wheelSegmentsComputed.length-1];
+  const targetCenter = (seg.start+seg.end)/2;
+  const finalRotation = 360*5 + (360 - targetCenter);
+  const wheelEl = document.getElementById('wheelDial');
+  wheelEl.style.transition = 'transform 4s cubic-bezier(0.12,0.85,0.2,1)';
+  wheelEl.style.transform = 'rotate('+finalRotation+'deg)';
+  setTimeout(()=>{
+    save.coins += seg.coins;
+    save.lastDailyClaim = todayString();
+    saveGame();
+    updateCoinDisplays();
+    document.getElementById('wheelResultText').textContent = 'You won '+seg.coins+' coins!';
+    document.getElementById('dailyStatusText').textContent = "You've already claimed today's reward. Come back tomorrow!";
+    spinBtn.textContent = 'ALREADY CLAIMED';
+  }, 4100);
+}
+document.getElementById('openDailyBtn').addEventListener('click', ()=>{
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('dailyScreen').style.display = 'block';
+  renderDailyScreen();
+});
+document.getElementById('closeDailyBtn').addEventListener('click', ()=>{
+  document.getElementById('dailyScreen').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+});
+document.getElementById('spinWheelBtn').addEventListener('click', spinDailyWheel);
+
+/* ============================================================
    GOOGLE SIGN-IN
    ============================================================ */
 // Paste your own free Google OAuth "Web application" Client ID below to enable
@@ -2578,6 +2810,12 @@ document.getElementById('googleSignInBtn').addEventListener('click', ()=>{
 updateEquippedLabels();
 updateCoinDisplays();
 renderProfile();
+function updateDailyButtonBadge(){
+  const btn = document.getElementById('openDailyBtn');
+  if(!btn) return;
+  btn.classList.toggle('dailyAvailable', dailyAvailable());
+}
+updateDailyButtonBadge();
 initLobbyScene();
 initShopPreview();
 
