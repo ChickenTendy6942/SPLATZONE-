@@ -54,8 +54,9 @@
     padding:22px; margin-bottom:18px;
   }
   .panel h2{font-size:15px; letter-spacing:.5px; color:#e8e8f0; margin-bottom:14px; font-family:'Inter',sans-serif; font-weight:800;}
-  .mapGrid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  @media (max-width:640px){.mapGrid{grid-template-columns:1fr;}}
+  .mapGrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+  @media (max-width:860px){.mapGrid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:560px){.mapGrid{grid-template-columns:1fr;}}
   .mapCard{
     border:2px solid var(--line); border-radius:8px; cursor:pointer; overflow:hidden;
     background:#0f0f16; transition:border-color .15s, transform .15s;
@@ -65,6 +66,7 @@
   .mapPreview{height:110px; display:flex; align-items:center; justify-content:center; font-family:'Archivo Black'; font-size:13px; letter-spacing:1px;}
   .mapPreview.sandlot{background:linear-gradient(160deg,#e8c98a,#b5652e);}
   .mapPreview.ruins{background:linear-gradient(160deg,#5a5468,#242028);}
+  .mapPreview.skyline{background:linear-gradient(160deg,#ffb877,#4a4f5c);}
   .mapInfo{padding:10px 14px 14px;}
   .mapInfo b{display:block; font-size:15px; margin-bottom:4px;}
   .mapInfo span{font-size:12.5px; color:#9a9ab0;}
@@ -232,6 +234,16 @@
   #settingsScreen{
     display:none; position:fixed; inset:0; z-index:55; background:var(--bg); overflow-y:auto;
   }
+  .shopPreviewStage{
+    width:260px; height:260px; margin:0 auto 6px; border-radius:12px; overflow:hidden; position:relative;
+    background:radial-gradient(circle at 50% 30%, #2a2a3e, #0f0f16); border:1px solid var(--line);
+  }
+  #shopPreviewCanvas{width:100%; height:100%; display:block;}
+  #shopPreviewLabel{
+    position:absolute; bottom:8px; left:0; right:0; text-align:center; font-family:'Archivo Black';
+    font-size:13px; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.8);
+  }
+  .shopItem.previewing{box-shadow:0 0 0 2px var(--cyan);}
   .keybindList{display:flex; flex-direction:column; gap:8px;}
   .keybindRow{
     display:flex; align-items:center; justify-content:space-between; background:var(--panel);
@@ -330,6 +342,13 @@
             <span>Dusky stone pillars around an open core. Long sightlines, riskier center.</span>
           </div>
         </div>
+        <div class="mapCard" data-map="skyline">
+          <div class="mapPreview skyline">SKYLINE TOWERS</div>
+          <div class="mapInfo">
+            <b>Skyline Towers</b>
+            <span>A dense downtown block of tall buildings and streets. Verticality, tight corners, close-quarters chaos.</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -341,6 +360,15 @@
       </div>
       <div class="diffTicks"><span>EASY</span><span>NORMAL</span><span>HARD</span><span>INSANE</span></div>
       <p id="difficultyDesc">Bots react and aim at a moderate, fair pace.</p>
+    </div>
+
+    <div class="panel">
+      <h2>2b. LOBBY SIZE</h2>
+      <div class="diffRow">
+        <input type="range" id="playerCountSlider" min="2" max="8" step="1" value="8">
+        <div id="playerCountLabel">8 PLAYERS</div>
+      </div>
+      <p class="hint">You + up to 7 bots. Smaller lobbies mean less competition but fewer targets too.</p>
     </div>
 
     <div class="panel">
@@ -367,6 +395,11 @@
       <h1 class="display">SHOP</h1>
       <div id="shopCoinDisplay">🪙 <span id="shopCoinAmount">0</span></div>
     </div>
+    <div class="shopPreviewStage">
+      <canvas id="shopPreviewCanvas"></canvas>
+      <div id="shopPreviewLabel">Rookie</div>
+    </div>
+    <p class="hint">Click any item below to preview it here. Buying/equipping is separate.</p>
     <h2 class="shopSectionTitle">CHARACTER SKINS</h2>
     <div id="skinShopList" class="shopGrid"></div>
     <h2 class="shopSectionTitle">WEAPONS</h2>
@@ -627,6 +660,22 @@ const MAPS = {
     ],
     pillarRing:{count:8, radius:18, pRadius:1.2, height:7, c:0xd48ecf},
     medkitSpots:[{x:0,z:0},{x:30,z:8},{x:-30,z:-8},{x:8,z:30},{x:-8,z:-30}]
+  },
+  skyline: {
+    name:'Skyline Towers', radius:52,
+    sky:0xffb877, fog:0xffb877, ground:0xb8b0a8, grid:0x928a80,
+    ambient:0xfff0e0, ambientI:0.9, sunI:1.0,
+    boxes:[
+      {x:-14,z:-14,w:8,d:8,h:14,c:0xc9463c},{x:0,z:-14,w:7,d:7,h:10,c:0x4a90d9},
+      {x:14,z:-14,w:8,d:8,h:16,c:0xd9a23a},{x:-14,z:0,w:7,d:7,h:12,c:0x4a90d9},
+      {x:14,z:0,w:7,d:7,h:9,c:0xc9463c},{x:-14,z:14,w:8,d:8,h:11,c:0xd9a23a},
+      {x:0,z:14,w:7,d:7,h:15,c:0x4a90d9},{x:14,z:14,w:8,d:8,h:8,c:0xc9463c},
+      {x:-32,z:-8,w:5,d:5,h:6,c:0x8a8f99},{x:32,z:8,w:5,d:5,h:6,c:0x8a8f99},
+      {x:-30,z:20,w:4,d:4,h:5,c:0x8a8f99},{x:30,z:-20,w:4,d:4,h:5,c:0x8a8f99},
+      {x:0,z:32,w:6,d:4,h:5,c:0x8a8f99},{x:0,z:-32,w:6,d:4,h:5,c:0x8a8f99}
+    ],
+    pillarRing:null,
+    medkitSpots:[{x:0,z:0},{x:-14,z:0},{x:14,z:0},{x:0,z:-14},{x:0,z:14}]
   }
 };
 
@@ -648,7 +697,7 @@ function buildZonePhases(baseR){
   ];
 }
 const HARD_TIME_LIMIT = 240; // seconds, force end
-const NUM_BOTS = 7;
+let selectedPlayerCount = 8; // total players including you (1-8 bots)
 const PLAYER_RADIUS = 0.4;
 const BOT_RADIUS = 0.45;
 const PLAYER_SPEED = 5.2;
@@ -749,6 +798,13 @@ diffSlider.addEventListener('input', ()=>{
   const d = DIFFICULTY_SETTINGS[selectedDifficulty-1];
   diffLabel.textContent = d.name;
   diffDesc.textContent = d.desc;
+});
+
+const playerCountSlider = document.getElementById('playerCountSlider');
+const playerCountLabel = document.getElementById('playerCountLabel');
+playerCountSlider.addEventListener('input', ()=>{
+  selectedPlayerCount = parseInt(playerCountSlider.value, 10);
+  playerCountLabel.textContent = selectedPlayerCount+' PLAYER'+(selectedPlayerCount===1?'':'S');
 });
 
 /* ============================================================
@@ -1111,7 +1167,8 @@ function spawnEntities(){
   };
   entities.push(player);
 
-  for(let i=0;i<NUM_BOTS;i++){
+  const botCount = selectedPlayerCount - 1;
+  for(let i=0;i<botCount;i++){
     const sp = randomSpawnPoint(currentMap.radius);
     const botSkin = SKINS[Math.floor(Math.random()*SKINS.length)];
     const meshBundle = makeBotMesh(botSkin);
@@ -1610,6 +1667,7 @@ function handleSlide(){
    ============================================================ */
 function startMatch(mapKey){
   lobbyActive = false;
+  shopPreviewActive = false;
   clockEl.menu.style.display = 'none';
   buildScene(mapKey);
   buildGunViewmodel();
@@ -1949,6 +2007,96 @@ function animateLobby(){
 }
 
 /* ============================================================
+   SHOP PREVIEW STAGE (live 3D preview before buying)
+   ============================================================ */
+let shopPreviewScene, shopPreviewCamera, shopPreviewRenderer;
+let shopPreviewObject = null, shopPreviewMode = 'mannequin', shopPreviewActive = false;
+
+function initShopPreview(){
+  const canvas = document.getElementById('shopPreviewCanvas');
+  shopPreviewRenderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  shopPreviewRenderer.setSize(260,260,false);
+  shopPreviewRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  shopPreviewScene = new THREE.Scene();
+  shopPreviewCamera = new THREE.PerspectiveCamera(35,1,0.05,20);
+  shopPreviewScene.add(new THREE.HemisphereLight(0xffffff,0x22223a,1.15));
+  const sun = new THREE.DirectionalLight(0xffffff,0.9);
+  sun.position.set(2,4,3);
+  shopPreviewScene.add(sun);
+  setPreviewCamera('mannequin');
+  requestAnimationFrame(animateShopPreview);
+}
+function setPreviewCamera(mode){
+  if(mode==='mannequin'){
+    shopPreviewCamera.position.set(0,1.35,3.2);
+    shopPreviewCamera.lookAt(0,1.1,0);
+  } else {
+    shopPreviewCamera.position.set(0,0.18,1.15);
+    shopPreviewCamera.lookAt(0,0,0);
+  }
+}
+function clearShopPreviewObject(){
+  if(shopPreviewObject){ shopPreviewScene.remove(shopPreviewObject); shopPreviewObject = null; }
+}
+function showSkinPreview(skinDef){
+  if(!shopPreviewScene) return;
+  clearShopPreviewObject();
+  const visual = buildMannequinVisual(skinDef);
+  shopPreviewObject = visual.group;
+  shopPreviewObject.userData.visual = visual;
+  shopPreviewScene.add(shopPreviewObject);
+  shopPreviewMode = 'mannequin';
+  setPreviewCamera('mannequin');
+  document.getElementById('shopPreviewLabel').textContent = skinDef.name;
+}
+function buildGunPreviewMesh(shapeKey, colorHex){
+  const group = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({color:colorHex});
+  let dims;
+  if(shapeKey==='sniper') dims=[0.09,0.09,0.95];
+  else if(shapeKey==='shotgun') dims=[0.2,0.2,0.5];
+  else if(shapeKey==='smg') dims=[0.12,0.16,0.4];
+  else dims=[0.14,0.16,0.55];
+  const body = new THREE.Mesh(new THREE.BoxGeometry(dims[0],dims[1],dims[2]), mat);
+  group.add(body);
+  if(shapeKey==='sniper'){
+    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.22,8), new THREE.MeshLambertMaterial({color:0x14141a}));
+    scope.rotation.z = Math.PI/2;
+    scope.position.set(0,0.09,-0.05);
+    group.add(scope);
+  }
+  if(shapeKey==='shotgun'){
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.35,8), mat);
+    barrel.rotation.z = Math.PI/2;
+    barrel.position.set(0,0,dims[2]/2+0.1);
+    group.add(barrel);
+  }
+  return group;
+}
+function showGunPreview(shapeKey, colorHex, label){
+  if(!shopPreviewScene) return;
+  clearShopPreviewObject();
+  shopPreviewObject = buildGunPreviewMesh(shapeKey, colorHex);
+  shopPreviewScene.add(shopPreviewObject);
+  shopPreviewMode = 'gun';
+  setPreviewCamera('gun');
+  document.getElementById('shopPreviewLabel').textContent = label;
+}
+function animateShopPreview(){
+  requestAnimationFrame(animateShopPreview);
+  if(!shopPreviewActive || !shopPreviewObject || !shopPreviewRenderer) return;
+  shopPreviewObject.rotation.y += 0.014;
+  if(shopPreviewMode==='mannequin' && shopPreviewObject.userData.visual){
+    const t = performance.now()*0.0022;
+    const swing = Math.sin(t)*0.3;
+    const v = shopPreviewObject.userData.visual;
+    v.legL.rotation.x = swing; v.legR.rotation.x = -swing;
+    v.armL.rotation.x = -swing*0.8; v.armR.rotation.x = swing*0.8;
+  }
+  shopPreviewRenderer.render(shopPreviewScene, shopPreviewCamera);
+}
+
+/* ============================================================
    COINS / EQUIPPED LABELS
    ============================================================ */
 function updateCoinDisplays(){
@@ -1994,6 +2142,11 @@ function renderShop(){
     const btn = item.querySelector('button');
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<s.cost) btn.disabled = true;
+    item.addEventListener('click', ()=>{
+      showSkinPreview(s);
+      skinList.querySelectorAll('.shopItem').forEach(el=>el.classList.remove('previewing'));
+      item.classList.add('previewing');
+    });
     skinList.appendChild(item);
   });
 
@@ -2016,6 +2169,11 @@ function renderShop(){
     const btn = item.querySelector('button');
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<w.cost) btn.disabled = true;
+    item.addEventListener('click', ()=>{
+      showGunPreview(key, getEquippedGunColor(), w.name);
+      weaponList.querySelectorAll('.shopItem').forEach(el=>el.classList.remove('previewing'));
+      item.classList.add('previewing');
+    });
     weaponList.appendChild(item);
   });
 
@@ -2034,6 +2192,11 @@ function renderShop(){
     const btn = item.querySelector('button');
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<g.cost) btn.disabled = true;
+    item.addEventListener('click', ()=>{
+      showGunPreview(save.equippedWeapon, g.color, g.name);
+      gunList.querySelectorAll('.shopItem').forEach(el=>el.classList.remove('previewing'));
+      item.classList.add('previewing');
+    });
     gunList.appendChild(item);
   });
 }
@@ -2069,11 +2232,14 @@ document.getElementById('gunShopList').addEventListener('click', handleShopClick
 document.getElementById('openShopBtn').addEventListener('click', ()=>{
   document.getElementById('menu').style.display = 'none';
   document.getElementById('shopScreen').style.display = 'block';
+  shopPreviewActive = true;
   renderShop();
+  showSkinPreview(getEquippedSkinDef());
 });
 document.getElementById('closeShopBtn').addEventListener('click', ()=>{
   document.getElementById('shopScreen').style.display = 'none';
   document.getElementById('menu').style.display = 'flex';
+  shopPreviewActive = false;
 });
 
 /* ============================================================
@@ -2184,6 +2350,7 @@ updateEquippedLabels();
 updateCoinDisplays();
 renderProfile();
 initLobbyScene();
+initShopPreview();
 
 /* ============================================================
    RESIZE
