@@ -821,6 +821,8 @@ const MAPS = {
       {x:30,z:-22,w:3,d:3,h:2,c:0xff8659},{x:-30,z:-20,w:3,d:3,h:2,c:0xff8659}
     ],
     pillarRing:null,
+    trees:[{x:-40,z:0},{x:40,z:0},{x:0,z:40},{x:0,z:-40},{x:-36,z:30},{x:36,z:-30}],
+    barrels:[{x:9,z:-2},{x:-9,z:2},{x:19,z:-17},{x:-19,z:-13},{x:3,z:23},{x:-3,z:-23}],
     medkitSpots:[{x:0,z:0},{x:20,z:8},{x:-20,z:-8},{x:8,z:-20},{x:-8,z:20}]
   },
   ruins: {
@@ -836,22 +838,33 @@ const MAPS = {
       {x:0,z:35,w:3,d:3,h:2,c:0x9d7ad9},{x:0,z:-35,w:3,d:3,h:2,c:0x9d7ad9}
     ],
     pillarRing:{count:8, radius:18, pRadius:1.2, height:7, c:0xd48ecf},
+    deadTrees:[{x:-38,z:-18},{x:38,z:18},{x:-42,z:22},{x:42,z:-22},{x:0,z:-42},{x:0,z:42}],
+    braziers:[{x:-9,z:-9},{x:9,z:9},{x:-9,z:9},{x:9,z:-9}],
     medkitSpots:[{x:0,z:0},{x:30,z:8},{x:-30,z:-8},{x:8,z:30},{x:-8,z:-30}]
   },
   skyline: {
     name:'Skyline Towers', radius:52, buildingStyle:true,
-    sky:0xffb877, fog:0xffb877, ground:0xb8b0a8, grid:0x928a80,
-    ambient:0xfff0e0, ambientI:0.9, sunI:1.0,
+    sky:0x8fc9ff, fog:0x8fc9ff, ground:0x9a978f, grid:0x76736a,
+    ambient:0xf0f4ff, ambientI:0.9, sunI:1.05,
     boxes:[
-      {x:-14,z:-14,w:8,d:8,h:14,c:0xc9463c},{x:0,z:-14,w:7,d:7,h:10,c:0x4a90d9},
+      {x:-14,z:-14,w:8,d:8,h:14,c:0xc9463c},{x:0,z:-14,w:7,d:7,h:10,c:0x3a9e8f},
       {x:14,z:-14,w:8,d:8,h:16,c:0xd9a23a},{x:-14,z:0,w:7,d:7,h:12,c:0x4a90d9},
-      {x:14,z:0,w:7,d:7,h:9,c:0xc9463c},{x:-14,z:14,w:8,d:8,h:11,c:0xd9a23a},
+      {x:14,z:0,w:7,d:7,h:9,c:0x8a5a9e},{x:-14,z:14,w:8,d:8,h:11,c:0xd97a4a},
       {x:0,z:14,w:7,d:7,h:15,c:0x4a90d9},{x:14,z:14,w:8,d:8,h:8,c:0xc9463c},
-      {x:-32,z:-8,w:5,d:5,h:6,c:0x8a8f99},{x:32,z:8,w:5,d:5,h:6,c:0x8a8f99},
-      {x:-30,z:20,w:4,d:4,h:5,c:0x8a8f99},{x:30,z:-20,w:4,d:4,h:5,c:0x8a8f99},
-      {x:0,z:32,w:6,d:4,h:5,c:0x8a8f99},{x:0,z:-32,w:6,d:4,h:5,c:0x8a8f99}
+      {x:-32,z:-8,w:5,d:5,h:6,c:0x8a8f99},{x:32,z:8,w:5,d:5,h:6,c:0x6b7580},
+      {x:-30,z:20,w:4,d:4,h:5,c:0x8a8f99},{x:30,z:-20,w:4,d:4,h:5,c:0x6b7580},
+      {x:0,z:32,w:6,d:4,h:5,c:0x8a8f99},{x:0,z:-32,w:6,d:4,h:5,c:0x6b7580}
     ],
     pillarRing:null,
+    trees:[
+      {x:-7,z:-7},{x:7,z:-7},{x:-7,z:7},{x:7,z:7},
+      {x:-20,z:-30},{x:20,z:30},{x:-38,z:14},{x:38,z:-14},
+      {x:-40,z:-25},{x:40,z:25},{x:0,z:44},{x:0,z:-44},{x:-45,z:0},{x:45,z:0}
+    ],
+    streetlights:[
+      {x:-7,z:0},{x:7,z:0},{x:0,z:-7},{x:0,z:7},
+      {x:-21,z:-21},{x:21,z:21},{x:-21,z:21},{x:21,z:-21}
+    ],
     medkitSpots:[{x:0,z:0},{x:-14,z:0},{x:14,z:0},{x:0,z:-14},{x:0,z:14}]
   },
   dustgulch: {
@@ -871,6 +884,8 @@ const MAPS = {
     cacti:[
       {x:-16,z:-6},{x:16,z:8},{x:-8,z:24},{x:10,z:-26},{x:30,z:-6},{x:-30,z:10}
     ],
+    lanterns:[{x:-24,z:-20},{x:24,z:-20},{x:-24,z:20},{x:24,z:20},{x:-4,z:5},{x:4,z:5}],
+    barrels:[{x:-19,z:-11},{x:19,z:-11},{x:-19,z:11},{x:19,z:11},{x:4,z:3},{x:-4,z:9}],
     medkitSpots:[{x:0,z:-6},{x:-24,z:0},{x:24,z:0},{x:0,z:24},{x:0,z:-24}]
   }
 };
@@ -1190,6 +1205,103 @@ function addBuildingObstacle(x,z,w,d,h,color,style){
     scene.add(unit);
   }
 }
+function addTree(x,z){
+  const trunkMat = new THREE.MeshStandardMaterial({color:0x5c3d24, roughness:0.9});
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.3,2.0,8), trunkMat);
+  trunk.position.set(x,1.0,z);
+  trunk.castShadow = true; trunk.receiveShadow = true;
+  scene.add(trunk);
+  const leafMat = new THREE.MeshStandardMaterial({color: Math.random()<0.5?0x3f8a4a:0x4fa356, roughness:0.85});
+  const foliageCount = 3;
+  for(let i=0;i<foliageCount;i++){
+    const s = 0.95 + Math.random()*0.5;
+    const foliage = new THREE.Mesh(new THREE.SphereGeometry(s,8,8), leafMat);
+    foliage.position.set(x+(Math.random()-0.5)*0.6, 2.3+Math.random()*0.5, z+(Math.random()-0.5)*0.6);
+    foliage.castShadow = true;
+    scene.add(foliage);
+  }
+  obstacleMeshes.push(trunk);
+  obstacles.push({minX:x-0.3, maxX:x+0.3, minZ:z-0.3, maxZ:z+0.3, height:2.0});
+}
+function addStreetlight(x,z){
+  const poleMat = new THREE.MeshStandardMaterial({color:0x2a2a30, roughness:0.6, metalness:0.4});
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,3.4,8), poleMat);
+  pole.position.set(x,1.7,z);
+  pole.castShadow = true;
+  scene.add(pole);
+  const lampMat = new THREE.MeshStandardMaterial({color:0xfff2c2, emissive:0xffe08a, emissiveIntensity:0.6, roughness:0.4});
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16,8,8), lampMat);
+  lamp.position.set(x,3.45,z);
+  scene.add(lamp);
+  obstacleMeshes.push(pole);
+  obstacles.push({minX:x-0.06, maxX:x+0.06, minZ:z-0.06, maxZ:z+0.06, height:3.4});
+}
+function addBarrel(x,z){
+  const mat = new THREE.MeshStandardMaterial({color:0x7a5230, roughness:0.85});
+  const bandMat = new THREE.MeshStandardMaterial({color:0x2a2a30, roughness:0.5, metalness:0.5});
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.3,0.7,12), mat);
+  barrel.position.set(x,0.35,z);
+  barrel.castShadow = true; barrel.receiveShadow = true;
+  scene.add(barrel);
+  [0.15,0.55].forEach(y=>{
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.345,0.345,0.05,12), bandMat);
+    band.position.set(x,y,z);
+    scene.add(band);
+  });
+  obstacleMeshes.push(barrel);
+  obstacles.push({minX:x-0.34, maxX:x+0.34, minZ:z-0.34, maxZ:z+0.34, height:0.7});
+}
+function addDeadTree(x,z){
+  const mat = new THREE.MeshStandardMaterial({color:0x4a3a32, roughness:0.95});
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.24,2.2,7), mat);
+  trunk.position.set(x,1.1,z);
+  trunk.castShadow = true; trunk.receiveShadow = true;
+  scene.add(trunk);
+  for(let i=0;i<4;i++){
+    const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.06,0.9,5), mat);
+    const a = (i/4)*Math.PI*2;
+    branch.position.set(x+Math.sin(a)*0.25, 2.1+i*0.12, z+Math.cos(a)*0.25);
+    branch.rotation.z = Math.cos(a)*0.9;
+    branch.rotation.x = Math.sin(a)*0.9;
+    branch.castShadow = true;
+    scene.add(branch);
+  }
+  obstacleMeshes.push(trunk);
+  obstacles.push({minX:x-0.24, maxX:x+0.24, minZ:z-0.24, maxZ:z+0.24, height:2.2});
+}
+function addBrazier(x,z){
+  const stoneMat = new THREE.MeshStandardMaterial({color:0x5a5468, roughness:0.9});
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.22,1.1,8), stoneMat);
+  post.position.set(x,0.55,z);
+  post.castShadow = true; post.receiveShadow = true;
+  scene.add(post);
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.2,0.22,10), stoneMat);
+  bowl.position.set(x,1.15,z);
+  scene.add(bowl);
+  const fireMat = new THREE.MeshStandardMaterial({color:0xff8a3d, emissive:0xff6b1a, emissiveIntensity:1.1, roughness:0.5});
+  const fire = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8), fireMat);
+  fire.position.set(x,1.3,z);
+  scene.add(fire);
+  obstacleMeshes.push(post);
+  obstacles.push({minX:x-0.2, maxX:x+0.2, minZ:z-0.2, maxZ:z+0.2, height:1.1});
+}
+function addLantern(x,z){
+  const woodMat = new THREE.MeshStandardMaterial({color:0x5a3a22, roughness:0.9});
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.11,2.8,8), woodMat);
+  post.position.set(x,1.4,z);
+  post.castShadow = true;
+  scene.add(post);
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.5,6), woodMat);
+  arm.rotation.z = Math.PI/2;
+  arm.position.set(x+0.25,2.7,z);
+  scene.add(arm);
+  const lampMat = new THREE.MeshStandardMaterial({color:0xffcf7a, emissive:0xff9d3d, emissiveIntensity:0.9, roughness:0.4});
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.13,8,8), lampMat);
+  lamp.position.set(x+0.5,2.6,z);
+  scene.add(lamp);
+  obstacleMeshes.push(post);
+  obstacles.push({minX:x-0.11, maxX:x+0.11, minZ:z-0.11, maxZ:z+0.11, height:2.8});
+}
 function addCactus(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x3f8a4a});
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,2.2,8), mat);
@@ -1265,6 +1377,12 @@ function buildScene(mapKey){
   }
   (currentMap.pillars||[]).forEach(p=>addPillarObstacle(p.x,p.z,p.r,p.h,p.c));
   (currentMap.cacti||[]).forEach(c=>addCactus(c.x,c.z));
+  (currentMap.trees||[]).forEach(t=>addTree(t.x,t.z));
+  (currentMap.streetlights||[]).forEach(s=>addStreetlight(s.x,s.z));
+  (currentMap.barrels||[]).forEach(b=>addBarrel(b.x,b.z));
+  (currentMap.deadTrees||[]).forEach(t=>addDeadTree(t.x,t.z));
+  (currentMap.braziers||[]).forEach(b=>addBrazier(b.x,b.z));
+  (currentMap.lanterns||[]).forEach(l=>addLantern(l.x,l.z));
 
   // zone wall (shrinking gas)
   const zoneGeo = new THREE.CylinderGeometry(1,1,50,40,1,true);
