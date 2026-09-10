@@ -99,13 +99,25 @@
   .startRow{display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap;}
   #startBtn{
     background:linear-gradient(90deg,var(--pink),#ff6b3d);
-    border:none; color:#fff; font-family:'Archivo Black'; font-size:20px; letter-spacing:1px;
-    padding:16px 44px; border-radius:8px; cursor:pointer;
+    border:none; color:#fff; font-family:'Archivo Black'; font-size:24px; letter-spacing:1px;
+    padding:20px 60px; border-radius:10px; cursor:pointer; width:100%; max-width:420px;
     box-shadow:0 6px 0 #a5123f;
   }
   #startBtn:active{transform:translateY(4px); box-shadow:0 2px 0 #a5123f;}
   #startBtn:disabled{opacity:.4; cursor:not-allowed; box-shadow:none;}
   .hint{color:#77778a; font-size:12.5px; text-align:center; margin-top:10px;}
+
+  .lobbyGrid{display:grid; grid-template-columns:300px 1fr; gap:18px; align-items:start;}
+  @media (max-width:760px){.lobbyGrid{grid-template-columns:1fr;}}
+  .lobbySidebar{position:sticky; top:0;}
+  @media (max-width:760px){.lobbySidebar{position:static;}}
+  .lobbyMainCol{display:flex; flex-direction:column; gap:18px;}
+  .sidebarBtnGrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0;}
+  .sidebarBtnGrid .lobbyBtn{margin-top:0; width:100%; font-size:11.5px; padding:10px 6px;}
+  .settingsTwoCol{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
+  @media (max-width:560px){.settingsTwoCol{grid-template-columns:1fr;}}
+  .settingsLabel{font-size:12px; letter-spacing:.5px; color:#c8c8d8; font-weight:800; margin-bottom:8px;}
+  .dropInPanel{text-align:center; background:linear-gradient(135deg, rgba(255,45,120,.12), rgba(255,157,61,.08)), var(--panel);}
 
   /* ---------- HUD ---------- */
   #hud{position:fixed; inset:0; z-index:20; pointer-events:none; display:none; font-family:'Inter',sans-serif;}
@@ -210,7 +222,7 @@
   #fatalErrorList{margin-top:18px; font-family:monospace; font-size:12.5px; color:#ff9d9d; white-space:pre-wrap;}
 
   /* ---------- LOBBY ---------- */
-  .lobbyPanel{background:linear-gradient(135deg, rgba(255,45,120,.08), rgba(45,230,255,.08)), var(--panel);}
+  .lobbySidebar{background:linear-gradient(135deg, rgba(255,45,120,.08), rgba(45,230,255,.08)), var(--panel);}
   .lobbyRow{display:flex; gap:22px; flex-wrap:wrap; align-items:center;}
   .lobbyPreviewWrap{width:220px; height:220px; border-radius:10px; overflow:hidden; background:radial-gradient(circle at 50% 30%, #26263a, #0f0f16); border:1px solid var(--line); flex-shrink:0;}
   #lobbyCanvas{width:100%; height:100%; display:block;}
@@ -348,106 +360,109 @@
       <p>Last paintballer standing wins. The fog closes in — don't get caught outside it.</p>
     </div>
 
-    <div class="panel lobbyPanel">
-      <h2>YOUR LOBBY</h2>
-      <div class="lobbyRow">
+    <div class="lobbyGrid">
+      <div class="panel lobbySidebar">
+        <h2>YOUR LOBBY</h2>
         <div class="lobbyPreviewWrap">
           <canvas id="lobbyCanvas"></canvas>
         </div>
-        <div class="lobbyInfo">
-          <div id="coinDisplay">🪙 <span id="coinAmount">0</span></div>
-          <div class="usernameRow">
-            <input type="text" id="usernameInput" maxlength="18" placeholder="Your name">
-            <button id="usernameSaveBtn">SAVE</button>
-          </div>
-          <div class="equippedLine">Skin: <b id="equippedSkinName">Crimson</b></div>
-          <div class="equippedLine">Gun rig: <b id="equippedGunName">Stock</b></div>
-          <button id="openShopBtn" class="lobbyBtn">OPEN SHOP</button>
-          <button id="openSettingsBtn" class="lobbyBtn secondary">SETTINGS</button>
-          <button id="openDailyBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#ffd54d,#ff9d3d); color:#2a1c00;">🎁 DAILY REWARD</button>
-          <button id="openMpBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#2de6ff,#39ff8f); color:#0c0c12;">⚔️ MULTIPLAYER DUEL</button>
+        <div id="coinDisplay">🪙 <span id="coinAmount">0</span></div>
+        <div class="usernameRow">
+          <input type="text" id="usernameInput" maxlength="18" placeholder="Your name">
+          <button id="usernameSaveBtn">SAVE</button>
+        </div>
+        <div class="equippedLine">Skin: <b id="equippedSkinName">Crimson</b></div>
+        <div class="equippedLine">Gun rig: <b id="equippedGunName">Stock</b></div>
+        <div class="sidebarBtnGrid">
+          <button id="openShopBtn" class="lobbyBtn">🛒 SHOP</button>
+          <button id="openSettingsBtn" class="lobbyBtn secondary">⚙️ SETTINGS</button>
+          <button id="openDailyBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#ffd54d,#ff9d3d); color:#2a1c00;">🎁 DAILY</button>
+          <button id="openMpBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#2de6ff,#39ff8f); color:#0c0c12;">⚔️ DUEL</button>
+        </div>
 
-          <div id="profileArea">
-            <div id="profileSignedOut">
-              <button id="googleSignInBtn" class="lobbyBtn secondary">SIGN IN WITH GOOGLE</button>
-              <div id="googleSetupNote">Sign-in needs a one-time setup by whoever owns this game (a free Google Client ID). Ask them, or see the comment near <code>GOOGLE_CLIENT_ID</code> in the code. Progress always saves to this browser either way.</div>
+        <div id="profileArea">
+          <div id="profileSignedOut">
+            <button id="googleSignInBtn" class="lobbyBtn secondary" style="width:100%;">SIGN IN WITH GOOGLE</button>
+            <div id="googleSetupNote">Sign-in needs a one-time setup by whoever owns this game (a free Google Client ID). Ask them, or see the comment near <code>GOOGLE_CLIENT_ID</code> in the code. Progress always saves to this browser either way.</div>
+          </div>
+          <div id="profileSignedIn" style="display:none;">
+            <img id="profilePicImg" alt="">
+            <span id="profileNameText"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="lobbyMainCol">
+        <div class="panel">
+          <h2>🗺️ 1. CHOOSE YOUR ARENA</h2>
+          <div class="mapGrid">
+            <div class="mapCard selected" data-map="sandlot">
+              <div class="mapPreview sandlot">SANDLOT ARENA</div>
+              <div class="mapInfo">
+                <b>Sandlot Arena</b>
+                <span>Open, sunlit crate yard. Lots of scattered cover, close-range skirmishes.</span>
+              </div>
             </div>
-            <div id="profileSignedIn" style="display:none;">
-              <img id="profilePicImg" alt="">
-              <span id="profileNameText"></span>
+            <div class="mapCard" data-map="ruins">
+              <div class="mapPreview ruins">ASHFALL RUINS</div>
+              <div class="mapInfo">
+                <b>Ashfall Ruins</b>
+                <span>Dusky stone pillars around an open core. Long sightlines, riskier center.</span>
+              </div>
+            </div>
+            <div class="mapCard" data-map="skyline">
+              <div class="mapPreview skyline">SKYLINE TOWERS</div>
+              <div class="mapInfo">
+                <b>Skyline Towers</b>
+                <span>A dense downtown block of tall buildings and streets. Verticality, tight corners, close-quarters chaos.</span>
+              </div>
+            </div>
+            <div class="mapCard" data-map="dustgulch">
+              <div class="mapPreview dustgulch">DUST GULCH</div>
+              <div class="mapInfo">
+                <b>Dust Gulch</b>
+                <span>A wild-west desert town with a train cart in the middle (mantle over it with Space!), saloons, rocks and cacti.</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="panel">
-      <h2>1. CHOOSE YOUR ARENA</h2>
-      <div class="mapGrid">
-        <div class="mapCard selected" data-map="sandlot">
-          <div class="mapPreview sandlot">SANDLOT ARENA</div>
-          <div class="mapInfo">
-            <b>Sandlot Arena</b>
-            <span>Open, sunlit crate yard. Lots of scattered cover, close-range skirmishes.</span>
+        <div class="panel">
+          <h2>⚙️ 2. MATCH SETTINGS</h2>
+          <div class="settingsTwoCol">
+            <div>
+              <div class="settingsLabel">Difficulty</div>
+              <div class="diffRow">
+                <input type="range" id="difficultySlider" min="1" max="4" step="1" value="2">
+                <div id="difficultyLabel">NORMAL</div>
+              </div>
+              <div class="diffTicks"><span>EASY</span><span>NORMAL</span><span>HARD</span><span>INSANE</span></div>
+              <p id="difficultyDesc" class="hint">Bots react and aim at a moderate, fair pace.</p>
+            </div>
+            <div>
+              <div class="settingsLabel">Lobby Size</div>
+              <div class="diffRow">
+                <input type="range" id="playerCountSlider" min="2" max="15" step="1" value="8">
+                <div id="playerCountLabel">8 PLAYERS</div>
+              </div>
+              <p class="hint">You + up to 14 bots. Smaller lobbies = less competition, fewer targets.</p>
+            </div>
           </div>
         </div>
-        <div class="mapCard" data-map="ruins">
-          <div class="mapPreview ruins">ASHFALL RUINS</div>
-          <div class="mapInfo">
-            <b>Ashfall Ruins</b>
-            <span>Dusky stone pillars around an open core. Long sightlines, riskier center.</span>
+
+        <div class="panel">
+          <h2>🔫 3. YOUR WEAPON</h2>
+          <div class="weaponList" style="grid-template-columns:1fr;">
+            <div class="wCard"><b id="menuEquippedWeaponName">Starter Blaster</b><div class="stats" id="menuEquippedWeaponStats">Fully automatic · Mid-range</div></div>
           </div>
+          <p class="hint">Better weapons are unlocked in the Shop with coins earned from playing — the strongest ones take real grinding.</p>
         </div>
-        <div class="mapCard" data-map="skyline">
-          <div class="mapPreview skyline">SKYLINE TOWERS</div>
-          <div class="mapInfo">
-            <b>Skyline Towers</b>
-            <span>A dense downtown block of tall buildings and streets. Verticality, tight corners, close-quarters chaos.</span>
-          </div>
-        </div>
-        <div class="mapCard" data-map="dustgulch">
-          <div class="mapPreview dustgulch">DUST GULCH</div>
-          <div class="mapInfo">
-            <b>Dust Gulch</b>
-            <span>A wild-west desert town with a train cart in the middle (mantle over it with Space!), saloons, rocks and cacti.</span>
-          </div>
+
+        <div class="panel dropInPanel">
+          <button id="startBtn">▶ DROP IN</button>
+          <p class="hint">100 HP · match lasts ~3–4 minutes · jump, slide and mantle to move around cover fast</p>
         </div>
       </div>
-    </div>
-
-    <div class="panel">
-      <h2>2. SET DIFFICULTY</h2>
-      <div class="diffRow">
-        <input type="range" id="difficultySlider" min="1" max="4" step="1" value="2">
-        <div id="difficultyLabel">NORMAL</div>
-      </div>
-      <div class="diffTicks"><span>EASY</span><span>NORMAL</span><span>HARD</span><span>INSANE</span></div>
-      <p id="difficultyDesc">Bots react and aim at a moderate, fair pace.</p>
-    </div>
-
-    <div class="panel">
-      <h2>2b. LOBBY SIZE</h2>
-      <div class="diffRow">
-        <input type="range" id="playerCountSlider" min="2" max="15" step="1" value="8">
-        <div id="playerCountLabel">8 PLAYERS</div>
-      </div>
-      <p class="hint">You + up to 14 bots. Smaller lobbies mean less competition but fewer targets too.</p>
-    </div>
-
-    <div class="panel">
-      <h2>3. YOUR WEAPON</h2>
-      <div class="weaponList" style="grid-template-columns:1fr;">
-        <div class="wCard"><b id="menuEquippedWeaponName">Starter Blaster</b><div class="stats" id="menuEquippedWeaponStats">Fully automatic · Mid-range</div></div>
-      </div>
-      <p class="hint">Better weapons are unlocked in the Shop with coins earned from playing — the strongest ones take real grinding.</p>
-    </div>
-
-    <div class="panel">
-      <h2>4. DROP IN</h2>
-      <div class="startRow">
-        <button id="startBtn">DROP IN</button>
-      </div>
-      <p class="hint">100 HP · 8 players · match lasts ~3–4 minutes · jump, slide and mantle to move around cover fast</p>
     </div>
   </div>
 </div>
@@ -708,7 +723,13 @@ const SKINS = [
   {id:'ronin',   name:'Cyber Ronin',   cost:2200, rarity:'Epic',      vest:0x171933, legs:0x0c0c14, arms:0x1c1f3a, helmet:'visor', accessory:'blade',    accent:0x39ff8f},
   {id:'golden',  name:'Golden Legend', cost:5000, rarity:'Legendary', vest:0xffd54d, legs:0xd9ac3f, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff6d9},
   {id:'lootllama', name:'Loot Llama', cost:1000, rarity:'Epic',      vest:0x8a6fd4, legs:0x4a3a7a, arms:0x8a6fd4, helmet:'llamahead', accessory:'backpack', accent:0xc9a8e0},
-  {id:'radiantgold', name:'Radiant Gold', cost:1000000, rarity:'Mythic', vest:0xffe066, legs:0xe6b800, arms:0xffe066, helmet:'crown', accessory:'cape', accent:0xfff6c2, shiny:true}
+  {id:'radiantgold', name:'Radiant Gold', cost:1000000, rarity:'Mythic', vest:0xffe066, legs:0xe6b800, arms:0xffe066, helmet:'crown', accessory:'cape', accent:0xfff6c2, shiny:true},
+  {id:'sunbeam', name:'Sunbeam', cost:250, rarity:'Common', vest:0xff9d3d, legs:0x3f8a4a, arms:0xffb85c, helmet:'none', accessory:'none', accent:0xffe066},
+  {id:'chromesov', name:'Chrome Sovereign', cost:2600, rarity:'Epic', vest:0x1a1a22, legs:0x0c0c12, arms:0x1a1a22, helmet:'crown', accessory:'cape', accent:0xd4af37},
+  {id:'fernpixie', name:'Fern Pixie', cost:900, rarity:'Rare', vest:0x2f8f5a, legs:0x3a2a4a, arms:0x2f8f5a, helmet:'none', accessory:'cape', accent:0xff8fd0},
+  {id:'widowsveil', name:"Widow's Veil", cost:1800, rarity:'Epic', vest:0x14141c, legs:0x0a0a10, arms:0x14141c, helmet:'cap', accessory:'cape', accent:0x8a7aa0},
+  {id:'crimsonregent', name:'Crimson Regent', cost:3200, rarity:'Legendary', vest:0xb5182f, legs:0x8a1224, arms:0xb5182f, helmet:'none', accessory:'epaulettes', accent:0xd4af37},
+  {id:'lunarwisp', name:'Lunar Wisp', cost:4000, rarity:'Legendary', vest:0xc9b6ff, legs:0x9a86d9, arms:0xc9b6ff, helmet:'crown', accessory:'none', accent:0xf0e8ff}
 ];
 const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d', Mythic:'#fff6c2' };
 
@@ -1491,6 +1512,18 @@ function buildMannequinVisual(skin){
     cape.position.set(0,1.05,-0.16);
     cape.rotation.x = 0.18;
     group.add(cape);
+  } else if(accessory==='epaulettes'){
+    const epMat = new THREE.MeshStandardMaterial({color:skin.accent||0xd4af37, metalness:0.5, roughness:0.35});
+    const epL = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.05,0.16), epMat);
+    epL.position.set(-0.24,1.48,0);
+    group.add(epL);
+    const epR = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.05,0.16), epMat);
+    epR.position.set(0.24,1.48,0);
+    group.add(epR);
+    const sash = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.68,0.05), epMat);
+    sash.position.set(0.1,1.2,0.15);
+    sash.rotation.z = 0.35;
+    group.add(sash);
   }
 
   group.traverse(obj=>{ if(obj.isMesh){ obj.castShadow = true; obj.receiveShadow = true; } });
