@@ -476,10 +476,10 @@
             <div>
               <div class="settingsLabel">Lobby Size</div>
               <div class="diffRow">
-                <input type="range" id="playerCountSlider" min="2" max="15" step="1" value="8">
+                <input type="range" id="playerCountSlider" min="2" max="40" step="1" value="40">
                 <div id="playerCountLabel">8 PLAYERS</div>
               </div>
-              <p class="hint">You + up to 14 bots. Smaller lobbies = less competition, fewer targets.</p>
+              <p class="hint">You + up to 39 bots. Smaller lobbies = less competition, fewer targets.</p>
             </div>
           </div>
         </div>
@@ -811,7 +811,7 @@ function loadSave(){
         coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'],
         equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'],
         profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null,
-        lastDifficulty:2, lastPlayerCount:8, lastMap:'sandlot',
+        lastDifficulty:2, lastPlayerCount:40, lastMap:'sandlot',
         ownedGliders:['basic'], equippedGlider:'basic'
       }, parsed);
       if(!Array.isArray(merged.equippedWeapons)){
@@ -820,7 +820,7 @@ function loadSave(){
       return merged;
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null, lastDifficulty:2, lastPlayerCount:8, lastMap:'sandlot', ownedGliders:['basic'], equippedGlider:'basic' };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null, lastDifficulty:2, lastPlayerCount:40, lastMap:'sandlot', ownedGliders:['basic'], equippedGlider:'basic' };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
@@ -972,36 +972,54 @@ const MAPS = {
       {x:44,z:44,w:4,d:4,h:3,c:0xff9d3d,plain:true},
       {x:52,z:40,w:5,d:3,h:2.5,c:0xff6b4d,plain:true},
       {x:48,z:52,w:3,d:6,h:3,c:0xffb03d,plain:true},
-      {x:38,z:48,w:4,d:4,h:2.5,c:0xff8659,plain:true}
+      {x:38,z:48,w:4,d:4,h:2.5,c:0xff8659,plain:true},
+      {x:63,z:-8,w:6,d:5,h:5,c:0x9a6a3a,style:'wood'},
+      {x:70,z:-12,w:5,d:5,h:4,c:0x8a5a34,style:'wood'},
+      {x:66,z:2,w:4,d:4,h:3,c:0x8a5a34,style:'wood'}
     ],
     pillars:[
       {x:-38,z:-38,r:1.2,h:7,c:0xd48ecf},{x:-33,z:-46,r:1.2,h:7,c:0xd48ecf},
       {x:-46,z:-33,r:1.2,h:7,c:0xd48ecf},{x:-50,z:-42,r:1.2,h:7,c:0xd48ecf},
       {x:-42,z:-50,r:1.2,h:7,c:0xd48ecf},{x:-30,z:-30,r:1.2,h:7,c:0xd48ecf},
-      {x:-25,z:-42,r:1.0,h:6,c:0xd48ecf},{x:-42,z:-25,r:1.0,h:6,c:0xd48ecf}
+      {x:-25,z:-42,r:1.0,h:6,c:0xd48ecf},{x:-42,z:-25,r:1.0,h:6,c:0xd48ecf},
+      {x:-65,z:12,r:1.4,h:22,c:0x8a8f99}
     ],
     trees:[
       {x:0,z:0},{x:15,z:15},{x:-15,z:-15},{x:20,z:-10},{x:-20,z:10},
       {x:10,z:25},{x:-10,z:-25},{x:0,z:20},{x:0,z:-20},{x:25,z:0},{x:-25,z:0}
     ],
     streetlights:[{x:47,z:-43},{x:40,z:-52}],
-    lanterns:[{x:-48,z:44},{x:-46,z:50}],
+    lanterns:[{x:-48,z:44},{x:-46,z:50},{x:65,z:-4}],
     braziers:[{x:-40,z:-40},{x:-36,z:-34}],
     cacti:[{x:-48,z:50},{x:-36,z:40}],
-    medkitSpots:[{x:0,z:0},{x:47,z:-43},{x:-48,z:44},{x:-40,z:-40},{x:48,z:48},{x:30,z:-30},{x:-30,z:30},{x:0,z:50}],
+    medkitSpots:[{x:0,z:0},{x:47,z:-43},{x:-48,z:44},{x:-40,z:-40},{x:48,z:48},{x:30,z:-30},{x:-30,z:30},{x:0,z:50},{x:66,z:-8},{x:-65,z:16}],
     chestSpots:[
       {x:44,z:-43},{x:50,z:-52},{x:38,z:-38},
       {x:-46,z:48},{x:-38,z:40},{x:-50,z:38},
       {x:-40,z:-42},{x:-36,z:-38},{x:-44,z:-30},
       {x:46,z:46},{x:40,z:52},{x:50,z:44},
+      {x:66,z:-6},{x:70,z:2},{x:60,z:-14},
+      {x:-63,z:14},{x:-68,z:8},
       {x:0,z:5},{x:12,z:-15},{x:-12,z:18},{x:18,z:22}
     ],
     shieldPotSpots:[
       {x:44,z:-53},{x:-52,z:46},{x:-44,z:-46},{x:52,z:50},
+      {x:65,z:0},{x:-65,z:20},
       {x:5,z:0},{x:-8,z:8},{x:15,z:0},{x:-15,z:5},{x:0,z:30},{x:0,z:-30}
     ],
     staticBouncePads:[
       {x:0,z:10},{x:0,z:-10},{x:35,z:-30},{x:-35,z:30},{x:20,z:35},{x:-20,z:-35}
+    ],
+    landingZones:[
+      {x:47,z:-43},   // Downtown
+      {x:-46,z:44},   // Frontier Camp
+      {x:-38,z:-38},  // Old Ruins
+      {x:46,z:46},    // Sandlot Corner
+      {x:66,z:-6},    // Trading Post
+      {x:-65,z:14},   // Radio Tower
+      {x:15,z:15},{x:-15,z:-15},{x:20,z:-10},{x:-20,z:10},
+      {x:10,z:25},{x:-10,z:-25},{x:0,z:20},{x:0,z:-20},{x:25,z:0},{x:-25,z:0},
+      {x:0,z:0}
     ]
   }
 };
@@ -1024,7 +1042,7 @@ function buildZonePhases(baseR){
   ];
 }
 const HARD_TIME_LIMIT = 240; // seconds, force end
-let selectedPlayerCount = 8; // total players including you (1-8 bots)
+let selectedPlayerCount = 40; // total players including you
 const PLAYER_RADIUS = 0.4;
 const BOT_RADIUS = 0.45;
 const PLAYER_SPEED = 5.2;
@@ -1049,7 +1067,7 @@ const SKYDIVE_START_HEIGHT = 90;
 const FREEFALL_ACCEL = 20;
 const FREEFALL_MAX_SPEED = 45;
 const GLIDER_FALL_SPEED = 5.5;
-const GLIDER_DEPLOY_HEIGHT = 25;
+const GLIDER_DEPLOY_HEIGHT = 5;
 const SKYDIVE_H_SPEED = 10;
 const SHIELD_POT_AMOUNT = 25;
 const BIG_SHIELD_AMOUNT = 50;
@@ -1451,6 +1469,178 @@ function buildBouncePadStructure(x,z){
   scene.add(group);
   return group;
 }
+function addBarn(x,z){
+  const bodyMat = new THREE.MeshStandardMaterial({color:0xb5342a, roughness:0.85});
+  const roofMat = new THREE.MeshStandardMaterial({color:0x3a2a24, roughness:0.9});
+  const trimMat = new THREE.MeshStandardMaterial({color:0xf0ead6, roughness:0.7});
+  const w=6, d=5, h=4;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), bodyMat);
+  body.position.set(x,h/2,z);
+  body.castShadow = true; body.receiveShadow = true;
+  scene.add(body);
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(d*0.62,d*0.62,w,3), roofMat);
+  roof.rotation.z = Math.PI/2;
+  roof.rotation.x = Math.PI/6;
+  roof.position.set(x, h+d*0.42, z);
+  roof.castShadow = true;
+  scene.add(roof);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.4,2.2,0.08), trimMat);
+  door.position.set(x, 1.1, z+d/2+0.02);
+  scene.add(door);
+  obstacleMeshes.push(body);
+  obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h+d*0.6});
+}
+function addSilo(x,z){
+  const mat = new THREE.MeshStandardMaterial({color:0xc9c2b0, roughness:0.55, metalness:0.25});
+  const h=7, r=1.4;
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,14), mat);
+  body.position.set(x,h/2,z);
+  body.castShadow = true; body.receiveShadow = true;
+  scene.add(body);
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(r,14,8,0,Math.PI*2,0,Math.PI*0.5), mat);
+  cap.position.set(x,h,z);
+  cap.castShadow = true;
+  scene.add(cap);
+  obstacleMeshes.push(body);
+  obstacles.push({minX:x-r, maxX:x+r, minZ:z-r, maxZ:z+r, height:h+r});
+}
+function addFence(x,z,length,rotY){
+  const mat = new THREE.MeshStandardMaterial({color:0xd9cba8, roughness:0.9});
+  const group = new THREE.Group();
+  const postCount = Math.max(2, Math.round(length/1.5));
+  for(let i=0;i<postCount;i++){
+    const t = postCount>1 ? i/(postCount-1)-0.5 : 0;
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.9,0.1), mat);
+    post.position.set(t*length, 0.45, 0);
+    group.add(post);
+  }
+  const rail1 = new THREE.Mesh(new THREE.BoxGeometry(length,0.08,0.08), mat);
+  rail1.position.y = 0.6; group.add(rail1);
+  const rail2 = new THREE.Mesh(new THREE.BoxGeometry(length,0.08,0.08), mat);
+  rail2.position.y = 0.3; group.add(rail2);
+  group.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+  group.rotation.y = rotY||0;
+  group.position.set(x,0,z);
+  scene.add(group); // decorative only, not a collision obstacle
+}
+function addPalmTree(x,z){
+  const trunkMat = new THREE.MeshStandardMaterial({color:0x8a6a4a, roughness:0.9});
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.22,3.2,8), trunkMat);
+  trunk.position.set(x,1.6,z);
+  trunk.rotation.z = 0.08;
+  trunk.castShadow = true; trunk.receiveShadow = true;
+  scene.add(trunk);
+  const frondMat = new THREE.MeshStandardMaterial({color:0x3f9e4a, roughness:0.8, side:THREE.DoubleSide});
+  for(let i=0;i<6;i++){
+    const a = (i/6)*Math.PI*2;
+    const frond = new THREE.Mesh(new THREE.ConeGeometry(0.35,1.8,4), frondMat);
+    frond.position.set(x+Math.sin(a)*0.3, 3.2, z+Math.cos(a)*0.3);
+    frond.rotation.x = Math.PI/2 - 0.5;
+    frond.rotation.y = a;
+    frond.castShadow = true;
+    scene.add(frond);
+  }
+  obstacleMeshes.push(trunk);
+  obstacles.push({minX:x-0.22, maxX:x+0.22, minZ:z-0.22, maxZ:z+0.22, height:3.2});
+}
+function addSnowTree(x,z){
+  const trunkMat = new THREE.MeshStandardMaterial({color:0x4a3528, roughness:0.9});
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.24,1.4,7), trunkMat);
+  trunk.position.set(x,0.7,z);
+  trunk.castShadow = true; trunk.receiveShadow = true;
+  scene.add(trunk);
+  const snowMat = new THREE.MeshStandardMaterial({color:0xe8f0f5, roughness:0.7});
+  for(let i=0;i<3;i++){
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.1-i*0.28, 1.3, 9), snowMat);
+    cone.position.set(x,1.6+i*0.9,z);
+    cone.castShadow = true;
+    scene.add(cone);
+  }
+  obstacleMeshes.push(trunk);
+  obstacles.push({minX:x-0.24, maxX:x+0.24, minZ:z-0.24, maxZ:z+0.24, height:1.4});
+}
+function addCaveEntrance(x,z,rockColor){
+  const rockMat = new THREE.MeshStandardMaterial({color:rockColor||0x6b6a68, roughness:0.95});
+  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(3.2,0), rockMat);
+  rock.position.set(x,2.2,z);
+  rock.scale.set(1,0.8,1);
+  rock.castShadow = true; rock.receiveShadow = true;
+  scene.add(rock);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(1.2,12), new THREE.MeshBasicMaterial({color:0x0a0a0c}));
+  hole.position.set(x, 1.4, z+2.65);
+  scene.add(hole);
+  obstacleMeshes.push(rock);
+  obstacles.push({minX:x-3.2, maxX:x+3.2, minZ:z-3.2, maxZ:z+3.2, height:3.5});
+}
+function makeHelipadTexture(){
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#3a3a42'; ctx.fillRect(0,0,128,128);
+  ctx.strokeStyle = '#ffd54d'; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.arc(64,64,52,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#ffd54d';
+  ctx.fillRect(40,30,10,68); ctx.fillRect(78,30,10,68); ctx.fillRect(40,58,48,10);
+  return new THREE.CanvasTexture(c);
+}
+function addHelipad(x,z){
+  const mat = new THREE.MeshStandardMaterial({map:makeHelipadTexture(), roughness:0.6});
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(3,3,0.2,20), mat);
+  pad.position.set(x,0.1,z);
+  pad.receiveShadow = true;
+  scene.add(pad); // decorative, walkable
+}
+function addZipline(x1,z1,h1,x2,z2,h2){
+  const poleMat = new THREE.MeshStandardMaterial({color:0x2a2a30, roughness:0.6});
+  const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.15,h1,8), poleMat);
+  p1.position.set(x1,h1/2,z1); p1.castShadow = true; scene.add(p1);
+  const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.15,h2,8), poleMat);
+  p2.position.set(x2,h2/2,z2); p2.castShadow = true; scene.add(p2);
+  const dx=x2-x1, dz=z2-z1, dy=h2-h1;
+  const len = Math.sqrt(dx*dx+dz*dz+dy*dy);
+  const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,len,6), new THREE.MeshBasicMaterial({color:0x1a1a1a}));
+  cable.position.set((x1+x2)/2, (h1+h2)/2, (z1+z2)/2);
+  cable.lookAt(x2,h2,z2);
+  cable.rotateX(Math.PI/2);
+  scene.add(cable);
+  obstacleMeshes.push(p1); obstacles.push({minX:x1-0.15, maxX:x1+0.15, minZ:z1-0.15, maxZ:z1+0.15, height:h1});
+  obstacleMeshes.push(p2); obstacles.push({minX:x2-0.15, maxX:x2+0.15, minZ:z2-0.15, maxZ:z2+0.15, height:h2});
+}
+function addTreehouse(x,z){
+  const trunkMat = new THREE.MeshStandardMaterial({color:0x4a3528, roughness:0.9});
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.7,6,10), trunkMat);
+  trunk.position.set(x,3,z);
+  trunk.castShadow = true; trunk.receiveShadow = true;
+  scene.add(trunk);
+  const foliage = new THREE.Mesh(new THREE.SphereGeometry(2.2,10,8), new THREE.MeshStandardMaterial({color:0x2f6e3a, roughness:0.85}));
+  foliage.position.set(x,7.2,z);
+  foliage.castShadow = true;
+  scene.add(foliage);
+  const woodMat = new THREE.MeshStandardMaterial({color:0x8a6a48, roughness:0.85});
+  const platform = new THREE.Mesh(new THREE.BoxGeometry(2.6,0.2,2.6), woodMat);
+  platform.position.set(x,4.2,z);
+  platform.castShadow = true; platform.receiveShadow = true;
+  scene.add(platform);
+  const hut = new THREE.Mesh(new THREE.BoxGeometry(1.8,1.6,1.8), woodMat);
+  hut.position.set(x,5.1,z);
+  hut.castShadow = true;
+  scene.add(hut);
+  obstacleMeshes.push(trunk);
+  obstacles.push({minX:x-0.7, maxX:x+0.7, minZ:z-0.7, maxZ:z+0.7, height:6});
+}
+function addWaterPatch(x,z,size){
+  const mat = new THREE.MeshStandardMaterial({color:0x1a5a7a, roughness:0.15, metalness:0.3, transparent:true, opacity:0.85});
+  const water = new THREE.Mesh(new THREE.CircleGeometry(size,24), mat);
+  water.rotation.x = -Math.PI/2;
+  water.position.set(x,0.03,z);
+  scene.add(water); // decorative, no swimming mechanic
+}
+function addSandPatch(x,z,size){
+  const mat = new THREE.MeshStandardMaterial({color:0xe8d5a3, roughness:0.9});
+  const sand = new THREE.Mesh(new THREE.CircleGeometry(size,20), mat);
+  sand.rotation.x = -Math.PI/2;
+  sand.position.set(x,0.02,z);
+  scene.add(sand);
+}
 function addLantern(x,z){
   const woodMat = new THREE.MeshStandardMaterial({color:0x5a3a22, roughness:0.9});
   const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.11,2.8,8), woodMat);
@@ -1545,6 +1735,17 @@ function buildScene(mapKey){
   (currentMap.cacti||[]).forEach(c=>addCactus(c.x,c.z));
   (currentMap.trees||[]).forEach(t=>addTree(t.x,t.z));
   (currentMap.streetlights||[]).forEach(s=>addStreetlight(s.x,s.z));
+  (currentMap.barns||[]).forEach(b=>addBarn(b.x,b.z));
+  (currentMap.silos||[]).forEach(s=>addSilo(s.x,s.z));
+  (currentMap.fences||[]).forEach(f=>addFence(f.x,f.z,f.length,f.rotY));
+  (currentMap.palmTrees||[]).forEach(t=>addPalmTree(t.x,t.z));
+  (currentMap.snowTrees||[]).forEach(t=>addSnowTree(t.x,t.z));
+  (currentMap.caveEntrances||[]).forEach(c=>addCaveEntrance(c.x,c.z,c.color));
+  (currentMap.helipads||[]).forEach(h=>addHelipad(h.x,h.z));
+  (currentMap.ziplines||[]).forEach(z2=>addZipline(z2.x1,z2.z1,z2.h1,z2.x2,z2.z2,z2.h2));
+  (currentMap.treehouses||[]).forEach(t=>addTreehouse(t.x,t.z));
+  (currentMap.waterPatches||[]).forEach(w=>addWaterPatch(w.x,w.z,w.size));
+  (currentMap.sandPatches||[]).forEach(s=>addSandPatch(s.x,s.z,s.size));
   (currentMap.barrels||[]).forEach(b=>addBarrel(b.x,b.z));
   (currentMap.deadTrees||[]).forEach(t=>addDeadTree(t.x,t.z));
   (currentMap.braziers||[]).forEach(b=>addBrazier(b.x,b.z));
@@ -1883,6 +2084,16 @@ function randomSpawnPoint(radius){
   }
   return {x:0,z:0};
 }
+function pickLandingSpot(zoneIndex){
+  if(!currentMap.landingZones || currentMap.landingZones.length===0) return randomSpawnPoint(currentMap.radius);
+  const zone = currentMap.landingZones[zoneIndex % currentMap.landingZones.length];
+  for(let attempt=0; attempt<15; attempt++){
+    const x = zone.x + (Math.random()-0.5)*24;
+    const z = zone.z + (Math.random()-0.5)*24;
+    if(!collides(x,z,0.6, currentMap.radius*1.5)) return {x,z};
+  }
+  return {x:zone.x, z:zone.z};
+}
 
 function spawnEntities(){
   entities = [];
@@ -1894,6 +2105,14 @@ function spawnEntities(){
   for(let i=botNamePool.length-1;i>0;i--){
     const j = Math.floor(Math.random()*(i+1));
     const tmp = botNamePool[i]; botNamePool[i] = botNamePool[j]; botNamePool[j] = tmp;
+  }
+  const BOT_NAME_PREFIXES = ['Shadow','Turbo','Silent','Rapid','Toxic','Ninja','Cosmic','Frosty','Blazing','Sneaky','Wild','Angry','Lucky','Grumpy','Sly','Salty','Feral','Chunky'];
+  const BOT_NAME_SUFFIXES = ['Wolf','Ranger','Gamer','Striker','Hunter','Fox','Panda','Viper','Falcon','Rogue','Bandit','Ghost','Tiger','Hawk','Cobra','Yeti','Goblin','Potato'];
+  function getBotName(i){
+    if(i < botNamePool.length) return botNamePool[i];
+    const p = BOT_NAME_PREFIXES[Math.floor(Math.random()*BOT_NAME_PREFIXES.length)];
+    const s = BOT_NAME_SUFFIXES[Math.floor(Math.random()*BOT_NAME_SUFFIXES.length)];
+    return p+s+Math.floor(Math.random()*99);
   }
   const spawnP = randomSpawnPoint(currentMap.radius);
   camera.position.set(spawnP.x, 1.6, spawnP.z);
@@ -1924,7 +2143,7 @@ function spawnEntities(){
   entities.push(player);
 
   if(currentMap.skydive){
-    const dropSpot = randomSpawnPoint(currentMap.radius);
+    const dropSpot = currentMap.landingZones ? pickLandingSpot(Math.floor(Math.random()*currentMap.landingZones.length)) : randomSpawnPoint(currentMap.radius);
     camera.position.set(dropSpot.x, SKYDIVE_START_HEIGHT, dropSpot.z);
     player.skydiving = true;
     player.skydiveState = 'freefall';
@@ -1933,11 +2152,12 @@ function spawnEntities(){
 
   const botCount = mpActive ? 0 : (selectedPlayerCount - 1);
   for(let i=0;i<botCount;i++){
-    const sp = randomSpawnPoint(currentMap.radius);
+    const sp = pickLandingSpot(i);
     const botSkin = SKINS[Math.floor(Math.random()*SKINS.length)];
     const meshBundle = makeBotMesh(botSkin);
     meshBundle.group.position.set(sp.x,0,sp.z);
-    const nameTag = makeNameSprite(botNamePool[i], 1);
+    const thisBotName = getBotName(i);
+    const nameTag = makeNameSprite(thisBotName, 1);
     nameTag.position.y = 2.4;
     meshBundle.group.add(nameTag);
     scene.add(meshBundle.group);
@@ -1951,7 +2171,7 @@ function spawnEntities(){
       mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
       limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
       animPhase: Math.random()*10,
-      wanderTarget:null, name:botNamePool[i], kills:0, shield:0,
+      wanderTarget:null, name:thisBotName, kills:0, shield:0,
       lastDamagedBy:null
     };
     meshBundle.body.userData.entityRef = bot;
@@ -2655,7 +2875,6 @@ function buildGliderMesh(colorHex){
   const group = new THREE.Group();
   const canopyMat = new THREE.MeshStandardMaterial({color:colorHex, roughness:0.6, side:THREE.DoubleSide});
   const canopy = new THREE.Mesh(new THREE.SphereGeometry(1.6, 14, 8, 0, Math.PI*2, 0, Math.PI*0.42), canopyMat);
-  canopy.rotation.x = Math.PI;
   group.add(canopy);
   const lineMat = new THREE.MeshBasicMaterial({color:0x222222});
   for(let i=0;i<4;i++){
@@ -2699,7 +2918,7 @@ function updateSkydive(dt){
     if(camera.position.y <= EYE_HEIGHT) landSkydive();
   }
   if(gliderMesh){
-    gliderMesh.position.set(camera.position.x, camera.position.y+1.15, camera.position.z);
+    gliderMesh.position.set(camera.position.x, camera.position.y+1.7, camera.position.z);
   }
 }
 function deploySkydiveGlider(){
@@ -4154,7 +4373,7 @@ selectedDifficulty = save.lastDifficulty || 2;
 diffSlider.value = selectedDifficulty;
 diffLabel.textContent = DIFFICULTY_SETTINGS[selectedDifficulty-1].name;
 diffDesc.textContent = DIFFICULTY_SETTINGS[selectedDifficulty-1].desc;
-selectedPlayerCount = save.lastPlayerCount || 8;
+selectedPlayerCount = save.lastPlayerCount || 40;
 playerCountSlider.value = selectedPlayerCount;
 playerCountLabel.textContent = selectedPlayerCount+' PLAYER'+(selectedPlayerCount===1?'':'S');
 selectedMap = save.lastMap || 'sandlot';
