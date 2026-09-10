@@ -469,6 +469,7 @@
     <b>C</b><span>Slide</span>
     <b>Left Click</b><span>Fire</span>
     <b>R</b><span>Reload</span>
+    <b>V</b><span>Toggle 1st/3rd Person</span>
   </div>
 </div>
 
@@ -558,10 +559,12 @@ function currentCoinMult(){
 const SKINS = [
   {id:'rookie',  name:'Rookie',        cost:0,    rarity:'Common',    vest:0x6b7280, legs:0x33333e, arms:0x6b7280, helmet:'none',  accessory:'none',     accent:0x9ca3af},
   {id:'crimson', name:'Crimson Recon', cost:600,  rarity:'Rare',      vest:0xe22348, legs:0x1a1a22, arms:0xe22348, helmet:'cap',   accessory:'none',     accent:0xff5478},
+  {id:'bonnieblue', name:'Bonnie Blue', cost:600,  rarity:'Rare',      vest:0x2d6bff, legs:0x1a1a22, arms:0x2d6bff, helmet:'none',  accessory:'none',     accent:0x8fb4ff},
   {id:'aqua',    name:'Aqua Phantom',  cost:600,  rarity:'Rare',      vest:0x17c9e6, legs:0x14313d, arms:0x17c9e6, helmet:'mask',  accessory:'none',     accent:0x7af4ff},
   {id:'inferno', name:'Inferno Titan', cost:1400, rarity:'Epic',      vest:0xff5b1f, legs:0x241211, arms:0xd42e0e, helmet:'none',  accessory:'backpack', accent:0xffc23d},
   {id:'ronin',   name:'Cyber Ronin',   cost:2200, rarity:'Epic',      vest:0x171933, legs:0x0c0c14, arms:0x1c1f3a, helmet:'visor', accessory:'blade',    accent:0x39ff8f},
-  {id:'golden',  name:'Golden Legend', cost:5000, rarity:'Legendary', vest:0xffd54d, legs:0xd9ac3f, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff6d9}
+  {id:'golden',  name:'Golden Legend', cost:5000, rarity:'Legendary', vest:0xffd54d, legs:0xd9ac3f, arms:0xffd54d, helmet:'crown', accessory:'cape',     accent:0xfff6d9},
+  {id:'lootllama', name:'Loot Llama', cost:1000, rarity:'Epic',      vest:0x8a6fd4, legs:0x4a3a7a, arms:0x8a6fd4, helmet:'llamahead', accessory:'backpack', accent:0xc9a8e0}
 ];
 const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d' };
 
@@ -602,11 +605,11 @@ function getEquippedGunColor(){
 const KEYBIND_KEY = 'splatzone_keybinds_v1';
 const DEFAULT_KEYBINDS = {
   forward:'KeyW', back:'KeyS', left:'KeyA', right:'KeyD',
-  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR'
+  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR', toggleView:'KeyV'
 };
 const KEYBIND_LABELS = {
   forward:'Move Forward', back:'Move Back', left:'Move Left', right:'Move Right',
-  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload'
+  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload', toggleView:'Toggle 1st/3rd Person'
 };
 function loadKeybinds(){
   try{
@@ -662,7 +665,7 @@ const MAPS = {
     medkitSpots:[{x:0,z:0},{x:30,z:8},{x:-30,z:-8},{x:8,z:30},{x:-8,z:-30}]
   },
   skyline: {
-    name:'Skyline Towers', radius:52,
+    name:'Skyline Towers', radius:52, buildingStyle:true,
     sky:0xffb877, fog:0xffb877, ground:0xb8b0a8, grid:0x928a80,
     ambient:0xfff0e0, ambientI:0.9, sunI:1.0,
     boxes:[
@@ -733,6 +736,8 @@ const TAC_SPRINT_REGEN_RATE = TAC_SPRINT_DURATION / TAC_SPRINT_COOLDOWN;
    ============================================================ */
 let selectedMap = 'sandlot';
 let scene, camera, renderer, controls, clock;
+let thirdPersonCamera, playerBodyVisual;
+let viewMode = 'first'; // 'first' or 'third'
 let obstacles = [];       // {minX,maxX,minZ,maxZ}
 let medkits = [];
 let obstacleMeshes = [];
@@ -911,6 +916,46 @@ function addBoxObstacle(x,z,w,d,h,color){
   obstacleMeshes.push(mesh);
   obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h});
 }
+function makeBuildingFacadeTexture(baseColorHex){
+  const c = document.createElement('canvas'); c.width=128; c.height=256;
+  const ctx = c.getContext('2d');
+  const base = '#'+baseColorHex.toString(16).padStart(6,'0');
+  ctx.fillStyle = base;
+  ctx.fillRect(0,0,128,256);
+  const cols=5, rows=9;
+  const winW = 128/cols, winH = 256/rows;
+  for(let row=0; row<rows; row++){
+    for(let col=0; col<cols; col++){
+      const lit = Math.random() < 0.5;
+      ctx.fillStyle = lit ? 'rgba(255,226,160,0.92)' : 'rgba(18,20,30,0.55)';
+      const px = col*winW + winW*0.16;
+      const py = row*winH + winH*0.22;
+      ctx.fillRect(px, py, winW*0.68, winH*0.56);
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+function addBuildingObstacle(x,z,w,d,h,color){
+  const tex = makeBuildingFacadeTexture(color);
+  tex.repeat.set(Math.max(1,Math.round(w/3.2)), Math.max(1,Math.round(h/3.6)));
+  const sideMat = new THREE.MeshLambertMaterial({map:tex});
+  const roofMat = new THREE.MeshLambertMaterial({color:new THREE.Color(color).multiplyScalar(0.55)});
+  const geo = new THREE.BoxGeometry(w,h,d);
+  // face order for BoxGeometry: +x,-x,+y(top),-y(bottom),+z,-z
+  const mesh = new THREE.Mesh(geo, [sideMat, sideMat, roofMat, roofMat, sideMat, sideMat]);
+  mesh.position.set(x,h/2,z);
+  scene.add(mesh);
+  obstacleMeshes.push(mesh);
+  obstacles.push({minX:x-w/2, maxX:x+w/2, minZ:z-d/2, maxZ:z+d/2, height:h});
+
+  if(Math.random() < 0.55){
+    const unit = new THREE.Mesh(new THREE.BoxGeometry(w*0.28, 0.6, d*0.28), roofMat);
+    unit.position.set(x + (Math.random()-0.5)*w*0.3, h+0.3, z + (Math.random()-0.5)*d*0.3);
+    scene.add(unit);
+  }
+}
 function addPillarObstacle(x,z,r,h,color){
   const geo = new THREE.CylinderGeometry(r,r*1.1,h,10);
   const mat = new THREE.MeshLambertMaterial({color});
@@ -952,7 +997,10 @@ function buildScene(mapKey){
   scene.add(wall);
 
   obstacles = []; obstacleMeshes = [];
-  currentMap.boxes.forEach(b=>addBoxObstacle(b.x,b.z,b.w,b.d,b.h,b.c));
+  currentMap.boxes.forEach(b=>{
+    if(currentMap.buildingStyle) addBuildingObstacle(b.x,b.z,b.w,b.d,b.h,b.c);
+    else addBoxObstacle(b.x,b.z,b.w,b.d,b.h,b.c);
+  });
   if(currentMap.pillarRing){
     const pr = currentMap.pillarRing;
     for(let i=0;i<pr.count;i++){
@@ -1028,8 +1076,10 @@ function buildMannequinVisual(skin){
   const group = new THREE.Group();
   const limbMat = new THREE.MeshLambertMaterial({color:skin.arms});
   const legMat = new THREE.MeshLambertMaterial({color:skin.legs});
-  const vestMat = new THREE.MeshLambertMaterial({color:skin.vest});
-  const headMat = new THREE.MeshLambertMaterial({color:0xffe0c2});
+  const vestMat = skin.torsoTexture
+    ? new THREE.MeshLambertMaterial({map:new THREE.TextureLoader().load(skin.torsoTexture)})
+    : new THREE.MeshLambertMaterial({color:skin.vest});
+  const headMat = new THREE.MeshLambertMaterial({color: skin.helmet==='llamahead' ? (skin.accent||0xc9a8e0) : 0xffe0c2});
   const accentMat = new THREE.MeshBasicMaterial({color:skin.accent||0xffffff});
   const trimMat = new THREE.MeshLambertMaterial({color:skin.accent||skin.vest});
 
@@ -1095,6 +1145,20 @@ function buildMannequinVisual(skin){
       spike.position.set(Math.sin(a)*0.14, 1.9, Math.cos(a)*0.14-0.02);
       group.add(spike);
     }
+  } else if(helmet==='llamahead'){
+    const furMat = new THREE.MeshLambertMaterial({color:skin.accent||0xc9a8e0});
+    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.15,0.28), furMat);
+    snout.position.set(0,1.58,0.2);
+    group.add(snout);
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.1,0.07,0.05), new THREE.MeshLambertMaterial({color:0x2a2230}));
+    nose.position.set(0,1.55,0.34);
+    group.add(nose);
+    const earGeo = new THREE.ConeGeometry(0.05,0.24,4);
+    const earL = new THREE.Mesh(earGeo, furMat); earL.position.set(-0.1,1.92,0); earL.rotation.z=0.2; group.add(earL);
+    const earR = new THREE.Mesh(earGeo, furMat); earR.position.set(0.1,1.92,0); earR.rotation.z=-0.2; group.add(earR);
+    const tuft = new THREE.Mesh(new THREE.ConeGeometry(0.07,0.13,6), trimMat);
+    tuft.position.set(0,1.95,-0.06);
+    group.add(tuft);
   }
 
   // ---- back accessory ----
@@ -1594,6 +1658,7 @@ window.addEventListener('keydown', e=>{
     if(e.code===KEYBINDS.reload) startReload();
     if(e.code===KEYBINDS.jump) handleJumpOrMantle();
     if(e.code===KEYBINDS.slide) handleSlide();
+    if(e.code===KEYBINDS.toggleView) viewMode = (viewMode==='first') ? 'third' : 'first';
   }
 });
 window.addEventListener('keyup', e=>{ keys[e.code]=false; });
@@ -1668,6 +1733,7 @@ function handleSlide(){
 function startMatch(mapKey){
   lobbyActive = false;
   shopPreviewActive = false;
+  viewMode = 'first';
   clockEl.menu.style.display = 'none';
   buildScene(mapKey);
   buildGunViewmodel();
@@ -1676,6 +1742,13 @@ function startMatch(mapKey){
   killCount = 0;
   spawnEntities();
   updateGunViewmodel();
+
+  thirdPersonCamera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 500);
+  const bodyVisual = buildMannequinVisual(getEquippedSkinDef());
+  playerBodyVisual = bodyVisual;
+  playerBodyVisual.group.visible = false;
+  playerBodyVisual.animPhase = 0;
+  scene.add(playerBodyVisual.group);
 
   renderer = new THREE.WebGLRenderer({canvas:document.getElementById('gameCanvas'), antialias:true});
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1785,6 +1858,40 @@ function drawMinimap(zoneR){
 /* ============================================================
    MAIN LOOP
    ============================================================ */
+function updateThirdPersonCamera(){
+  if(!thirdPersonCamera) return;
+  const backDir = new THREE.Vector3();
+  camera.getWorldDirection(backDir);
+  backDir.negate();
+  const desiredDist = 4.2, desiredHeight = 1.5;
+  const origin = camera.position.clone();
+  const ray = new THREE.Raycaster(origin, backDir, 0.1, desiredDist);
+  const hits = ray.intersectObjects(obstacleMeshes, false);
+  const dist = hits.length>0 ? Math.max(1.0, hits[0].distance-0.3) : desiredDist;
+  thirdPersonCamera.position.copy(origin).addScaledVector(backDir, dist);
+  thirdPersonCamera.position.y += desiredHeight;
+  thirdPersonCamera.quaternion.copy(camera.quaternion);
+  thirdPersonCamera.fov = camera.fov;
+  thirdPersonCamera.updateProjectionMatrix();
+}
+function updatePlayerBodyVisual(dt, isMoving){
+  if(!playerBodyVisual) return;
+  const showBody = (viewMode==='third');
+  playerBodyVisual.group.visible = showBody;
+  if(gunMesh) gunMesh.visible = !showBody;
+  if(!showBody) return;
+  playerBodyVisual.group.position.set(camera.position.x, Math.max(0, camera.position.y-EYE_HEIGHT), camera.position.z);
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir); dir.y = 0;
+  if(dir.lengthSq() > 0.0001) playerBodyVisual.group.rotation.y = Math.atan2(dir.x, dir.z);
+  playerBodyVisual.animPhase += dt * (isMoving ? 8 : 2);
+  const swing = Math.sin(playerBodyVisual.animPhase) * (isMoving ? 0.55 : 0.06);
+  playerBodyVisual.legL.rotation.x = swing;
+  playerBodyVisual.legR.rotation.x = -swing;
+  playerBodyVisual.armL.rotation.x = -swing*0.85;
+  playerBodyVisual.armR.rotation.x = swing*0.85;
+}
+
 function updateHUD(zoneState){
   const hpPct = Math.max(player.health,0);
   clockEl.healthFill.style.width = hpPct+'%';
@@ -1841,6 +1948,7 @@ function animate(){
     if(keys[KEYBINDS.right]){ mx+=right.x; mz+=right.z; }
     if(keys[KEYBINDS.left]){ mx-=right.x; mz-=right.z; }
     const len = Math.hypot(mx,mz);
+    const isMovingThisFrame = len > 0.001;
 
     // tactical sprint: short burst, then forced cooldown
     const wantsSprint = !!keys[KEYBINDS.sprint] && len>0.001 && player.grounded && !player.sliding && !player.crouching && !player.aiming;
@@ -1952,6 +2060,8 @@ function animate(){
 
     updateProjectiles(dt);
     updateMedkits(dt);
+    updatePlayerBodyVisual(dt, isMovingThisFrame);
+    if(viewMode==='third') updateThirdPersonCamera();
     updateTracers();
     updateHUD(zoneState);
     drawMinimap(zr);
@@ -1964,7 +2074,7 @@ function animate(){
     }
   }
 
-  renderer.render(scene, camera);
+  renderer.render(scene, viewMode==='third' && thirdPersonCamera ? thirdPersonCamera : camera);
 }
 
 /* ============================================================
@@ -2359,6 +2469,10 @@ window.addEventListener('resize', ()=>{
   if(!camera || !renderer) return;
   camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
+  if(thirdPersonCamera){
+    thirdPersonCamera.aspect = window.innerWidth/window.innerHeight;
+    thirdPersonCamera.updateProjectionMatrix();
+  }
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
