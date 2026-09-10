@@ -68,6 +68,7 @@
   .mapPreview.ruins{background:linear-gradient(160deg,#5a5468,#242028);}
   .mapPreview.skyline{background:linear-gradient(160deg,#ffb877,#4a4f5c);}
   .mapPreview.dustgulch{background:linear-gradient(160deg,#ffb15c,#8a5a34);}
+  .mapPreview.battleroyale{background:linear-gradient(160deg,#8fc9ff,#c9463c,#d48ecf);}
   .mapInfo{padding:10px 14px 14px;}
   .mapInfo b{display:block; font-size:15px; margin-bottom:4px;}
   .mapInfo span{font-size:12.5px; color:#9a9ab0;}
@@ -127,6 +128,11 @@
     transition:opacity .12s, transform .08s;
   }
   #crosshair.aiming{opacity:0.25;}
+  #skydiveHint{
+    position:absolute; top:40%; left:50%; transform:translateX(-50%);
+    font-family:'Archivo Black'; font-size:16px; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.8);
+    background:rgba(10,10,16,.5); padding:8px 16px; border-radius:8px; white-space:nowrap;
+  }
   #crosshair::before, #crosshair::after{
     content:''; position:absolute; background:#fff; box-shadow:0 0 2px #000;
   }
@@ -151,6 +157,9 @@
   #healthLabel{font-size:11px; letter-spacing:1px; color:#c8c8d8; margin-bottom:5px; font-weight:800;}
   #healthBarBg{width:100%; height:16px; background:#26262f; border-radius:4px; overflow:hidden; border:1px solid #3a3a48;}
   #healthBarFill{height:100%; width:100%; background:linear-gradient(90deg,#c6ff2d,#57e07a); transition:width .15s, background .2s;}
+  #shieldBarBg{width:100%; height:10px; background:#26262f; border-radius:4px; overflow:hidden; border:1px solid #3a3a48; margin-top:5px;}
+  #shieldBarFill{height:100%; width:0%; background:linear-gradient(90deg,#4d9fff,#2de6ff); transition:width .15s;}
+  #brInventoryHud{margin-top:8px; font-size:12px; color:#e8e8f0; line-height:1.6;}
   #sprintBarBg{width:100%; height:6px; background:#26262f; border-radius:3px; overflow:hidden; border:1px solid #3a3a48; margin-top:6px;}
   #sprintBarFill{height:100%; width:100%; background:linear-gradient(90deg,#2de6ff,#4d7bff); transition:width .1s;}
   #sprintBarFill.cooling{background:linear-gradient(90deg,#ff6b4d,#ff3b3b);}
@@ -305,7 +314,6 @@
     position:absolute; bottom:8px; left:0; right:0; text-align:center; font-family:'Archivo Black';
     font-size:13px; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.8);
   }
-  .shopItem.previewing{box-shadow:0 0 0 2px var(--cyan);}
   .keybindList{display:flex; flex-direction:column; gap:8px;}
   .keybindRow{
     display:flex; align-items:center; justify-content:space-between; background:var(--panel);
@@ -317,23 +325,42 @@
     font-family:'Archivo Black'; font-size:12.5px; padding:8px 14px; border-radius:6px; cursor:pointer;
   }
   .keybindRow button.listening{color:var(--pink); border-color:var(--pink);}
-  .shopWrap{max-width:820px; margin:0 auto; padding:40px 24px;}
+  .shopWrap{max-width:960px; margin:0 auto; padding:40px 24px;}
   .shopHeader{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
   .shopHeader h1{font-size:40px; background:linear-gradient(90deg,var(--pink),var(--cyan)); -webkit-background-clip:text; background-clip:text; color:transparent;}
   #shopCoinDisplay{font-family:'Archivo Black'; font-size:22px; color:#ffd54d;}
   .shopSectionTitle{font-size:14px; letter-spacing:.5px; color:#c8c8d8; margin:26px 0 12px;}
-  .shopGrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:14px;}
-  .shopItem{
-    background:var(--panel); border:2px solid var(--line); border-radius:10px; padding:14px; text-align:center;
+
+  .shopTabs{display:flex; gap:8px; margin:22px 0 16px; border-bottom:1px solid var(--line);}
+  .shopTab{
+    background:none; border:none; color:#9a9ab0; font-family:'Archivo Black'; font-size:12.5px;
+    letter-spacing:.5px; padding:10px 16px; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-1px;
   }
-  .shopItem.owned{border-color:var(--cyan);}
+  .shopTab.active{color:#fff; border-bottom-color:var(--cyan);}
+  .shopTabPanel{animation:tabFadeIn .2s ease;}
+  @keyframes tabFadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .shopGrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:16px;}
+  .shopItem{
+    position:relative; border-radius:12px; padding:2px; text-align:center; cursor:pointer;
+    border:2px solid var(--line); overflow:hidden; transition:transform .12s;
+  }
+  .shopItem:hover{transform:translateY(-3px);}
+  .shopItem.owned{border-color:rgba(45,230,255,.5);}
   .shopItem.equipped{border-color:var(--lime); box-shadow:0 0 0 1px var(--lime);}
-  .rarityTag{font-size:9.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px;}
-  .shopSwatch{width:100%; height:60px; border-radius:8px; margin-bottom:10px;}
-  .shopItem b{display:block; font-size:13.5px; margin-bottom:4px;}
-  .shopItem .cost{font-size:12px; color:#ffd54d; margin-bottom:8px;}
+  .shopItem.previewing{box-shadow:0 0 0 2px var(--cyan);}
+  .shopCardInner{
+    background:var(--rarity-bg, var(--panel)); border-radius:10px; padding:12px; height:100%;
+  }
+  .rarityTag{font-size:9.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; text-align:left;}
+  .shopSwatch{
+    width:100%; height:140px; border-radius:8px; margin-bottom:10px; background-size:cover; background-position:center 15%;
+    background-color:rgba(0,0,0,.2); box-shadow:inset 0 -30px 30px -10px rgba(0,0,0,.35);
+  }
+  .shopItem b{display:block; font-size:13.5px; margin-bottom:4px; text-align:left;}
+  .shopItem .cost{font-size:12px; color:#ffd54d; margin-bottom:8px; text-align:left;}
   .shopItem button{
-    width:100%; border:none; border-radius:6px; padding:8px; font-family:'Archivo Black'; font-size:11.5px;
+    width:100%; border:none; border-radius:6px; padding:9px; font-family:'Archivo Black'; font-size:11.5px;
     cursor:pointer; background:linear-gradient(90deg,var(--pink),#ff6b3d); color:#fff;
   }
   .shopItem button:disabled{opacity:.5; cursor:not-allowed;}
@@ -424,6 +451,13 @@
                 <span>A wild-west desert town with a train cart in the middle (mantle over it with Space!), saloons, rocks and cacti.</span>
               </div>
             </div>
+            <div class="mapCard" data-map="battleroyale">
+              <div class="mapPreview battleroyale">BATTLE ROYALE BETA</div>
+              <div class="mapInfo">
+                <b>Battle Royale Beta</b>
+                <span>A huge map with 4 distinct zones. Drop in from the sky — freefall, then deploy your glider (Space) and land where you choose.</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -478,16 +512,33 @@
       <div id="shopPreviewLabel">Rookie</div>
     </div>
     <p class="hint">Click any item below to preview it here. Buying/equipping is separate.</p>
-    <h2 class="shopSectionTitle">CHARACTER SKINS</h2>
-    <div id="skinShopList" class="shopGrid"></div>
-    <h2 class="shopSectionTitle">WEAPONS — carry 2 at once, switch with Q in a match</h2>
-    <div class="startRow" style="gap:10px; margin-bottom:12px;">
-      <button id="slotPrimaryBtn" class="lobbyBtn">PRIMARY: <span id="slotPrimaryName"></span></button>
-      <button id="slotSecondaryBtn" class="lobbyBtn secondary">SECONDARY: <span id="slotSecondaryName"></span></button>
+
+    <div class="shopTabs">
+      <button class="shopTab active" data-tab="skinsTab">CHARACTER SKINS</button>
+      <button class="shopTab" data-tab="weaponsTab">WEAPONS</button>
+      <button class="shopTab" data-tab="rigsTab">GUN RIGS</button>
+      <button class="shopTab" data-tab="glidersTab">GLIDERS</button>
     </div>
-    <div id="weaponShopList" class="shopGrid"></div>
-    <h2 class="shopSectionTitle">GUN RIGS</h2>
-    <div id="gunShopList" class="shopGrid"></div>
+
+    <div id="skinsTab" class="shopTabPanel">
+      <div id="skinShopList" class="shopGrid"></div>
+    </div>
+    <div id="weaponsTab" class="shopTabPanel" style="display:none;">
+      <p class="hint" style="margin-bottom:12px;">Carry 2 at once, switch with Q in a match.</p>
+      <div class="startRow" style="gap:10px; margin-bottom:12px;">
+        <button id="slotPrimaryBtn" class="lobbyBtn">PRIMARY: <span id="slotPrimaryName"></span></button>
+        <button id="slotSecondaryBtn" class="lobbyBtn secondary">SECONDARY: <span id="slotSecondaryName"></span></button>
+      </div>
+      <div id="weaponShopList" class="shopGrid"></div>
+    </div>
+    <div id="rigsTab" class="shopTabPanel" style="display:none;">
+      <div id="gunShopList" class="shopGrid"></div>
+    </div>
+    <div id="glidersTab" class="shopTabPanel" style="display:none;">
+      <p class="hint" style="margin-bottom:12px;">Used automatically when skydiving on Battle Royale Beta.</p>
+      <div id="gliderShopList" class="shopGrid"></div>
+    </div>
+
     <button id="closeShopBtn" class="lobbyBtn" style="margin-top:24px;">BACK TO LOBBY</button>
   </div>
 </div>
@@ -577,6 +628,7 @@
 <!-- HUD -->
 <div id="hud">
   <div id="crosshair"></div>
+  <div id="skydiveHint" style="display:none;"></div>
   <div id="hitmarker"></div>
   <div id="zoneVignette"></div>
   <div id="dmgFlash"></div>
@@ -585,7 +637,9 @@
   <div class="topLeft" id="healthWrap">
     <div id="healthLabel">HEALTH</div>
     <div id="healthBarBg"><div id="healthBarFill"></div></div>
+    <div id="shieldBarBg" style="display:none;"><div id="shieldBarFill"></div></div>
     <div id="sprintBarBg"><div id="sprintBarFill"></div></div>
+    <div id="brInventoryHud" style="display:none;"></div>
   </div>
 
   <div class="topRight" id="ammoBox">
@@ -691,13 +745,14 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
    CONFIG
    ============================================================ */
 const GUNS = {
-  starter: { key:'starter', name:'Starter Blaster', color:0x2c2f36, dmg:13, mag:26, fireRate:150, reload:1500, range:40, spread:0.032, pellets:1, auto:true,  cost:0,     rarity:'Common' },
-  smg:     { key:'smg',     name:'Rapidfire SMG',   color:0x274a8a, dmg:9,  mag:34, fireRate:85,  reload:1500, range:32, spread:0.055, pellets:1, auto:true,  cost:5000,  rarity:'Rare' },
-  shotgun: { key:'shotgun', name:'Power Shotgun',   color:0x8a5a1f, dmg:10, mag:6,  fireRate:700, reload:1800, range:15, spread:0.15,  pellets:7, auto:false, cost:12000, rarity:'Epic' },
-  sniper:  { key:'sniper',  name:'Deadeye Sniper',  color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:70, spread:0.006, pellets:1, auto:false, cost:30000, rarity:'Legendary' },
-  minigun: { key:'minigun', name:'Apex Minigun',    color:0xffd54d, dmg:12, mag:150,fireRate:45,  reload:2800, range:42, spread:0.05,  pellets:1, auto:true,  cost:1000000000, rarity:'Mythic' }
+  starter:    { key:'starter',    name:'Starter Blaster',      color:0x2c2f36, dmg:13, mag:26, fireRate:150, reload:1500, range:55, spread:0.026, pellets:1, auto:true,  cost:0,        rarity:'Common',    falloff:'none' },
+  smg:        { key:'smg',        name:'Rapidfire SMG',        color:0x274a8a, dmg:9,  mag:34, fireRate:85,  reload:1500, range:32, spread:0.055, pellets:1, auto:true,  cost:1000,     rarity:'Rare',      falloff:'none' },
+  shotgun:    { key:'shotgun',    name:'Power Shotgun',        color:0x8a5a1f, dmg:11, mag:6,  fireRate:700, reload:1800, range:22, spread:0.15,  pellets:7, auto:false, cost:3000,     rarity:'Epic',      falloff:'close' },
+  heavyrifle: { key:'heavyrifle', name:'Heavy Assault Rifle',  color:0x3a3a2c, dmg:17, mag:20, fireRate:230, reload:1900, range:60, spread:0.02,  pellets:1, auto:true,  cost:4500,     rarity:'Epic',      falloff:'range' },
+  sniper:     { key:'sniper',     name:'Deadeye Sniper',       color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:80, spread:0.005, pellets:1, auto:false, cost:8000,     rarity:'Legendary', falloff:'none', scoped:true },
+  minigun:    { key:'minigun',    name:'Apex Minigun',         color:0xffd54d, dmg:12, mag:150,fireRate:45,  reload:2800, range:42, spread:0.05,  pellets:1, auto:true,  cost:1000000000, rarity:'Mythic',  falloff:'none' }
 };
-const WEAPON_KEYS = ['starter','smg','shotgun','sniper','minigun'];
+const WEAPON_KEYS = ['starter','smg','shotgun','heavyrifle','sniper','minigun'];
 
 const DIFFICULTY_SETTINGS = [
   { name:'EASY',   desc:'Bots react slowly and miss a lot. Lower coin payout.',                    aggro:20, hitMult:0.55, fireRateMult:1.55, dmgMult:0.8,  coinMult:0.5 },
@@ -739,6 +794,12 @@ const GUN_SKINS = [
   {id:'magenta',  name:'Magenta Rig', color:0xd6317e, cost:150},
   {id:'gold',     name:'Gold Rig',    color:0xb8892b, cost:400}
 ];
+const GLIDER_SKINS = [
+  {id:'basic',    name:'Basic Canopy',    color:0xe8e8f0, cost:0},
+  {id:'sunset',   name:'Sunset Canopy',   color:0xff9d3d, cost:200},
+  {id:'umbrella', name:'Classic Umbrella',color:0xff2d78, cost:200},
+  {id:'stealth',  name:'Stealth Canopy',  color:0x22222a, cost:350}
+];
 
 const SAVE_KEY = 'splatzone_save_v1';
 function loadSave(){
@@ -749,7 +810,9 @@ function loadSave(){
       const merged = Object.assign({
         coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'],
         equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'],
-        profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null
+        profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null,
+        lastDifficulty:2, lastPlayerCount:8, lastMap:'sandlot',
+        ownedGliders:['basic'], equippedGlider:'basic'
       }, parsed);
       if(!Array.isArray(merged.equippedWeapons)){
         merged.equippedWeapons = [parsed.equippedWeapon || 'starter', 'starter'];
@@ -757,7 +820,7 @@ function loadSave(){
       return merged;
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null, lastDifficulty:2, lastPlayerCount:8, lastMap:'sandlot', ownedGliders:['basic'], equippedGlider:'basic' };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
@@ -771,15 +834,21 @@ function getEquippedGunColor(){
   const g = GUN_SKINS.find(x=>x.id===save.equippedGun) || GUN_SKINS[0];
   return g.color;
 }
+function getEquippedGliderColor(){
+  const g = GLIDER_SKINS.find(x=>x.id===save.equippedGlider) || GLIDER_SKINS[0];
+  return g.color;
+}
 
 const KEYBIND_KEY = 'splatzone_keybinds_v1';
 const DEFAULT_KEYBINDS = {
   forward:'KeyW', back:'KeyS', left:'KeyA', right:'KeyD',
-  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR', toggleView:'KeyV', switchWeapon:'KeyQ', aim:'MOUSE2'
+  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR', toggleView:'KeyV', switchWeapon:'KeyQ', aim:'MOUSE2',
+  useShield:'KeyG', throwBouncePad:'KeyB'
 };
 const KEYBIND_LABELS = {
   forward:'Move Forward', back:'Move Back', left:'Move Left', right:'Move Right',
-  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload', toggleView:'Toggle 1st/3rd Person', switchWeapon:'Switch Weapon', aim:'Aim Down Sights'
+  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload', toggleView:'Toggle 1st/3rd Person', switchWeapon:'Switch Weapon', aim:'Aim Down Sights',
+  useShield:'Use Big Shield (BR)', throwBouncePad:'Throw Bounce Pad (BR)'
 };
 function loadKeybinds(){
   try{
@@ -887,6 +956,53 @@ const MAPS = {
     lanterns:[{x:-24,z:-20},{x:24,z:-20},{x:-24,z:20},{x:24,z:20},{x:-4,z:5},{x:4,z:5}],
     barrels:[{x:-19,z:-11},{x:19,z:-11},{x:-19,z:11},{x:19,z:11},{x:4,z:3},{x:-4,z:9}],
     medkitSpots:[{x:0,z:-6},{x:-24,z:0},{x:24,z:0},{x:0,z:24},{x:0,z:-24}]
+  },
+  battleroyale: {
+    name:'Battle Royale Beta', radius:100, buildingStyle:true, facadeStyle:'windows', skydive:true, brLoot:true,
+    sky:0x8fc9ff, fog:0x8fc9ff, ground:0x8a9a7a, grid:0x6f7f60,
+    ambient:0xf0f4ff, ambientI:0.9, sunI:1.1,
+    boxes:[
+      {x:42,z:-48,w:7,d:7,h:12,c:0xc9463c},{x:52,z:-48,w:6,d:6,h:9,c:0x4a90d9},
+      {x:42,z:-38,w:6,d:6,h:10,c:0x3a9e8f},{x:52,z:-38,w:7,d:7,h:14,c:0xd9a23a},
+      {x:47,z:-58,w:6,d:6,h:11,c:0x8a5a9e},{x:35,z:-42,w:5,d:5,h:8,c:0xc9463c},
+      {x:-44,z:46,w:8,d:6,h:5,c:0x8a5a34,style:'wood'},
+      {x:-54,z:42,w:6,d:5,h:4,c:0x9a6a3a,style:'wood'},
+      {x:-40,z:36,w:5,d:5,h:4,c:0x8a5a34,style:'wood'},
+      {x:-50,z:52,w:5,d:5,h:4,c:0x9a6a3a,style:'wood'},
+      {x:44,z:44,w:4,d:4,h:3,c:0xff9d3d,plain:true},
+      {x:52,z:40,w:5,d:3,h:2.5,c:0xff6b4d,plain:true},
+      {x:48,z:52,w:3,d:6,h:3,c:0xffb03d,plain:true},
+      {x:38,z:48,w:4,d:4,h:2.5,c:0xff8659,plain:true}
+    ],
+    pillars:[
+      {x:-38,z:-38,r:1.2,h:7,c:0xd48ecf},{x:-33,z:-46,r:1.2,h:7,c:0xd48ecf},
+      {x:-46,z:-33,r:1.2,h:7,c:0xd48ecf},{x:-50,z:-42,r:1.2,h:7,c:0xd48ecf},
+      {x:-42,z:-50,r:1.2,h:7,c:0xd48ecf},{x:-30,z:-30,r:1.2,h:7,c:0xd48ecf},
+      {x:-25,z:-42,r:1.0,h:6,c:0xd48ecf},{x:-42,z:-25,r:1.0,h:6,c:0xd48ecf}
+    ],
+    trees:[
+      {x:0,z:0},{x:15,z:15},{x:-15,z:-15},{x:20,z:-10},{x:-20,z:10},
+      {x:10,z:25},{x:-10,z:-25},{x:0,z:20},{x:0,z:-20},{x:25,z:0},{x:-25,z:0}
+    ],
+    streetlights:[{x:47,z:-43},{x:40,z:-52}],
+    lanterns:[{x:-48,z:44},{x:-46,z:50}],
+    braziers:[{x:-40,z:-40},{x:-36,z:-34}],
+    cacti:[{x:-48,z:50},{x:-36,z:40}],
+    medkitSpots:[{x:0,z:0},{x:47,z:-43},{x:-48,z:44},{x:-40,z:-40},{x:48,z:48},{x:30,z:-30},{x:-30,z:30},{x:0,z:50}],
+    chestSpots:[
+      {x:44,z:-43},{x:50,z:-52},{x:38,z:-38},
+      {x:-46,z:48},{x:-38,z:40},{x:-50,z:38},
+      {x:-40,z:-42},{x:-36,z:-38},{x:-44,z:-30},
+      {x:46,z:46},{x:40,z:52},{x:50,z:44},
+      {x:0,z:5},{x:12,z:-15},{x:-12,z:18},{x:18,z:22}
+    ],
+    shieldPotSpots:[
+      {x:44,z:-53},{x:-52,z:46},{x:-44,z:-46},{x:52,z:50},
+      {x:5,z:0},{x:-8,z:8},{x:15,z:0},{x:-15,z:5},{x:0,z:30},{x:0,z:-30}
+    ],
+    staticBouncePads:[
+      {x:0,z:10},{x:0,z:-10},{x:35,z:-30},{x:-35,z:30},{x:20,z:35},{x:-20,z:-35}
+    ]
   }
 };
 
@@ -927,10 +1043,28 @@ const SIPHON_AMOUNT = 25; // 25% of 100 max HP, healed on elimination
 const PER_KILL_COINS = 15;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RADIUS = 1.1;
-const PROJECTILE_GRAVITY = 10; // bullet drop for that real-paintball arc
+const PROJECTILE_GRAVITY = 2.5; // just a subtle arc at long range now
 const BOT_VS_BOT_DMG_MULT = 0.6; // bots go easier on each other so matches don't get wiped out too fast
+const SKYDIVE_START_HEIGHT = 90;
+const FREEFALL_ACCEL = 20;
+const FREEFALL_MAX_SPEED = 45;
+const GLIDER_FALL_SPEED = 5.5;
+const GLIDER_DEPLOY_HEIGHT = 25;
+const SKYDIVE_H_SPEED = 10;
+const SHIELD_POT_AMOUNT = 25;
+const BIG_SHIELD_AMOUNT = 50;
+const MAX_SHIELD = 100;
+const MAX_CARRIED_SHIELDS = 3;
+const MAX_CARRIED_PADS = 3;
+const PICKUP_RADIUS = 1.1;
+const BOUNCE_PAD_RADIUS = 1.3;
+const BOUNCE_PAD_VELOCITY = 22;
+const BOUNCE_PAD_COOLDOWN = 0.6;
+const LOOT_WEAPON_POOL = ['smg','shotgun','heavyrifle','sniper'];
+const GLIDER_H_SPEED = 8;
 const AIM_SPREAD_MULT = 0.12; // spread multiplier while aiming down sights ("ADS")
 const AIM_FOV = 55;
+const SCOPE_FOV = 18;
 const HIP_FOV = 75;
 const AIM_SPEED_MULT = 0.72;
 const CROUCH_EYE_HEIGHT = 1.15;
@@ -964,6 +1098,9 @@ let mpStateBroadcastTimer = 0;
 let mpRoomCode = '';
 let obstacles = [];       // {minX,maxX,minZ,maxZ}
 let medkits = [];
+let chests = [];
+let shieldPots = [];
+let bouncePadStructures = [];
 let obstacleMeshes = [];
 let currentMap;
 let zonePhases, matchElapsed = 0, gameState = 'menu'; // menu, countdown, playing, ended
@@ -980,6 +1117,9 @@ let audioCtx = null;
 
 const clockEl = {
   healthFill: document.getElementById('healthBarFill'),
+  shieldBarBg: document.getElementById('shieldBarBg'),
+  shieldFill: document.getElementById('shieldBarFill'),
+  brInventoryHud: document.getElementById('brInventoryHud'),
   sprintFill: document.getElementById('sprintBarFill'),
   crosshair: document.getElementById('crosshair'),
   ammoBig: document.getElementById('ammoBig'),
@@ -1012,6 +1152,8 @@ document.querySelectorAll('.mapCard').forEach(card=>{
     document.querySelectorAll('.mapCard').forEach(c=>c.classList.remove('selected'));
     card.classList.add('selected');
     selectedMap = card.dataset.map;
+    save.lastMap = selectedMap;
+    saveGame();
   });
 });
 document.getElementById('startBtn').addEventListener('click', ()=>{
@@ -1028,6 +1170,8 @@ diffSlider.addEventListener('input', ()=>{
   const d = DIFFICULTY_SETTINGS[selectedDifficulty-1];
   diffLabel.textContent = d.name;
   diffDesc.textContent = d.desc;
+  save.lastDifficulty = selectedDifficulty;
+  saveGame();
 });
 
 const playerCountSlider = document.getElementById('playerCountSlider');
@@ -1035,6 +1179,8 @@ const playerCountLabel = document.getElementById('playerCountLabel');
 playerCountSlider.addEventListener('input', ()=>{
   selectedPlayerCount = parseInt(playerCountSlider.value, 10);
   playerCountLabel.textContent = selectedPlayerCount+' PLAYER'+(selectedPlayerCount===1?'':'S');
+  save.lastPlayerCount = selectedPlayerCount;
+  saveGame();
 });
 
 /* ============================================================
@@ -1058,7 +1204,12 @@ function beep({freq=440, dur=0.08, type='square', vol=0.15, slideTo=null}){
   osc.start(t0); osc.stop(t0+dur);
 }
 function sfxShoot(gunKey){
-  beep({freq:260,dur:0.07,type:'square',vol:0.14,slideTo:110});
+  if(gunKey==='shotgun') beep({freq:150,dur:0.17,type:'sawtooth',vol:0.24,slideTo:45});
+  else if(gunKey==='smg') beep({freq:380,dur:0.045,type:'square',vol:0.11,slideTo:220});
+  else if(gunKey==='heavyrifle') beep({freq:180,dur:0.11,type:'sawtooth',vol:0.2,slideTo:70});
+  else if(gunKey==='sniper') beep({freq:700,dur:0.22,type:'sawtooth',vol:0.26,slideTo:90});
+  else if(gunKey==='minigun') beep({freq:420,dur:0.035,type:'square',vol:0.09,slideTo:250});
+  else beep({freq:260,dur:0.07,type:'square',vol:0.14,slideTo:110});
 }
 function sfxHit(){ beep({freq:900,dur:0.05,type:'sine',vol:0.18}); }
 function sfxHurt(){ beep({freq:140,dur:0.18,type:'sawtooth',vol:0.2,slideTo:60}); }
@@ -1285,6 +1436,21 @@ function addBrazier(x,z){
   obstacleMeshes.push(post);
   obstacles.push({minX:x-0.2, maxX:x+0.2, minZ:z-0.2, maxZ:z+0.2, height:1.1});
 }
+function buildBouncePadStructure(x,z){
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({color:0xffd54d, roughness:0.4, emissive:0xffb020, emissiveIntensity:0.25});
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,0.15,16), mat);
+  pad.position.y = 0.075;
+  pad.receiveShadow = true;
+  group.add(pad);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0,0.06,8,20), new THREE.MeshStandardMaterial({color:0x1a1a22}));
+  ring.position.y = 0.15;
+  ring.rotation.x = Math.PI/2;
+  group.add(ring);
+  group.position.set(x,0,z);
+  scene.add(group);
+  return group;
+}
 function addLantern(x,z){
   const woodMat = new THREE.MeshStandardMaterial({color:0x5a3a22, roughness:0.9});
   const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.11,2.8,8), woodMat);
@@ -1365,7 +1531,7 @@ function buildScene(mapKey){
 
   obstacles = []; obstacleMeshes = [];
   currentMap.boxes.forEach(b=>{
-    if(currentMap.buildingStyle) addBuildingObstacle(b.x,b.z,b.w,b.d,b.h,b.c,currentMap.facadeStyle||'windows');
+    if(currentMap.buildingStyle && !b.plain) addBuildingObstacle(b.x,b.z,b.w,b.d,b.h,b.c,b.style||currentMap.facadeStyle||'windows');
     else addBoxObstacle(b.x,b.z,b.w,b.d,b.h,b.c);
   });
   if(currentMap.pillarRing){
@@ -1414,6 +1580,53 @@ function buildScene(mapKey){
     group.position.set(spot.x,0.1,spot.z);
     scene.add(group);
     medkits.push({x:spot.x, z:spot.z, group, active:true});
+  });
+
+  chests = [];
+  (currentMap.chestSpots||[]).forEach(spot=>{
+    const group = new THREE.Group();
+    const woodMat = new THREE.MeshStandardMaterial({color:0x8a5a2f, roughness:0.85});
+    const trimMat = new THREE.MeshStandardMaterial({color:0xd4af37, roughness:0.4, metalness:0.6});
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.5,0.55), woodMat);
+    base.position.y = 0.25;
+    group.add(base);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.92,0.22,0.57), woodMat);
+    lid.position.y = 0.61;
+    group.add(lid);
+    const band1 = new THREE.Mesh(new THREE.BoxGeometry(0.94,0.06,0.6), trimMat);
+    band1.position.y = 0.25;
+    group.add(band1);
+    const band2 = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.75,0.6), trimMat);
+    band2.position.set(0,0.42,0);
+    group.add(band2);
+    group.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.7,8,8), new THREE.MeshBasicMaterial({color:0xffd54d, transparent:true, opacity:0.12}));
+    glow.position.y = 0.4;
+    group.add(glow);
+    group.position.set(spot.x,0,spot.z);
+    scene.add(group);
+    chests.push({x:spot.x, z:spot.z, group, active:true});
+  });
+
+  shieldPots = [];
+  (currentMap.shieldPotSpots||[]).forEach(spot=>{
+    const group = new THREE.Group();
+    const glassMat = new THREE.MeshStandardMaterial({color:0x2de6ff, transparent:true, opacity:0.75, roughness:0.2, emissive:0x2de6ff, emissiveIntensity:0.3});
+    const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.18,0.32,10), glassMat);
+    bottle.position.y = 0.3;
+    group.add(bottle);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,0.12,10), new THREE.MeshStandardMaterial({color:0x1a1a22}));
+    cap.position.y = 0.52;
+    group.add(cap);
+    group.position.set(spot.x,0,spot.z);
+    scene.add(group);
+    shieldPots.push({x:spot.x, z:spot.z, group, active:true});
+  });
+
+  bouncePadStructures = [];
+  (currentMap.staticBouncePads||[]).forEach(spot=>{
+    const group = buildBouncePadStructure(spot.x, spot.z);
+    bouncePadStructures.push({x:spot.x, z:spot.z, group, cooldownTimer:0});
   });
 }
 
@@ -1685,12 +1898,18 @@ function spawnEntities(){
   const spawnP = randomSpawnPoint(currentMap.radius);
   camera.position.set(spawnP.x, 1.6, spawnP.z);
 
+  const isBR = !!currentMap.brLoot;
+  const startGuns = isBR ? ['starter', null] : [save.equippedWeapons[0], save.equippedWeapons[1]];
+  const startAmmo = isBR
+    ? { starter: GUNS.starter.mag }
+    : { [save.equippedWeapons[0]]: GUNS[save.equippedWeapons[0]].mag, [save.equippedWeapons[1]]: GUNS[save.equippedWeapons[1]].mag };
+
   player = {
     isPlayer:true, alive:true, health:100,
-    guns: [save.equippedWeapons[0], save.equippedWeapons[1]],
+    guns: startGuns,
     gunIndex: 0,
-    gunKey: save.equippedWeapons[0],
-    ammo:{ [save.equippedWeapons[0]]: GUNS[save.equippedWeapons[0]].mag, [save.equippedWeapons[1]]: GUNS[save.equippedWeapons[1]].mag },
+    gunKey: startGuns[0],
+    ammo: startAmmo,
     reloading:false, reloadEndAt:0, lastShot:0, semiFired:false,
     kills:0, name: save.username || 'YOU',
     velocityY:0, grounded:true, eyeHeight:EYE_HEIGHT, airOffset:0,
@@ -1698,9 +1917,19 @@ function spawnEntities(){
     mantling:false, mantleTimer:0, mantleStart:null, mantleEnd:null, mantlePeakY:0,
     aiming:false, crouching:false, currentFov:HIP_FOV,
     sprinting:false, sprintMeter:TAC_SPRINT_DURATION, sprintCooldown:0,
-    velX:0, velZ:0
+    velX:0, velZ:0,
+    skydiving:false, skydiveState:'freefall', fallSpeed:0,
+    shield:0, bigShields:0, bouncePads:0, padCooldown:0
   };
   entities.push(player);
+
+  if(currentMap.skydive){
+    const dropSpot = randomSpawnPoint(currentMap.radius);
+    camera.position.set(dropSpot.x, SKYDIVE_START_HEIGHT, dropSpot.z);
+    player.skydiving = true;
+    player.skydiveState = 'freefall';
+    player.fallSpeed = 0;
+  }
 
   const botCount = mpActive ? 0 : (selectedPlayerCount - 1);
   for(let i=0;i<botCount;i++){
@@ -1722,7 +1951,7 @@ function spawnEntities(){
       mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
       limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
       animPhase: Math.random()*10,
-      wanderTarget:null, name:botNamePool[i], kills:0,
+      wanderTarget:null, name:botNamePool[i], kills:0, shield:0,
       lastDamagedBy:null
     };
     meshBundle.body.userData.entityRef = bot;
@@ -1743,7 +1972,7 @@ function spawnEntities(){
       isPlayer:false, isRemote:true, alive:true, health:100,
       mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
       limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
-      animPhase:0, name:mpRemoteName, kills:0, lastDamagedBy:null,
+      animPhase:0, name:mpRemoteName, kills:0, shield:0, lastDamagedBy:null,
       netTargetX:sp.x, netTargetZ:sp.z, netTargetRotY:0, netMoving:false,
       peerId:'remote'
     };
@@ -1758,6 +1987,7 @@ function spawnEntities(){
    GUN VIEWMODEL
    ============================================================ */
 let gunMesh, muzzleFlash;
+let gliderMesh;
 function buildGunViewmodel(){
   gunMesh = new THREE.Group();
   gunMesh.position.set(0.28,-0.28,-0.55);
@@ -1829,10 +2059,10 @@ function playerFire(){
   const shotDirs = [];
   for(let p=0;p<g.pellets;p++){
     const dir = getSpreadDir(baseDir, spread);
-    spawnProjectile(origin, dir, g.dmg, g.range, player, getEquippedGunColor());
+    spawnProjectile(origin, dir, g.dmg, g.range, player, getEquippedGunColor(), g.falloff);
     shotDirs.push(dir);
   }
-  if(mpActive) mpBroadcastShot(origin, shotDirs, g.dmg, g.range, getEquippedGunColor());
+  if(mpActive) mpBroadcastShot(origin, shotDirs, g.dmg, g.range, getEquippedGunColor(), g.falloff);
 
   if(player.ammo[player.gunKey] <= 0) startReload();
 }
@@ -1845,14 +2075,35 @@ function buildPaintballMesh(color){
   return mesh;
 }
 
-function spawnProjectile(origin, dir, damage, range, ownerRef, color){
+function spawnProjectile(origin, dir, damage, range, ownerRef, color, falloff){
   const mesh = buildPaintballMesh(color);
   mesh.position.copy(origin);
   projectiles.push({
     pos: origin.clone(),
     vel: dir.clone().normalize().multiplyScalar(PAINTBALL_SPEED),
-    damage, ownerRef, maxDist: range, traveled: 0, mesh, color
+    damage, ownerRef, maxDist: range, traveled: 0, mesh, color, falloff: falloff||'none'
   });
+}
+function rangeDamageMultiplier(falloff, distTraveled, maxRange){
+  if(falloff==='close'){
+    const full = maxRange*0.3;
+    if(distTraveled <= full) return 1;
+    const t = Math.min(1, (distTraveled-full)/(maxRange-full));
+    return Math.max(0.2, 1 - t*0.8);
+  }
+  if(falloff==='range'){
+    const t = Math.min(1, distTraveled/maxRange);
+    return 1 + t*0.6;
+  }
+  return 1;
+}
+function applyDamage(ent, amount){
+  if(ent.shield && ent.shield > 0){
+    if(amount <= ent.shield){ ent.shield -= amount; return; }
+    amount -= ent.shield;
+    ent.shield = 0;
+  }
+  ent.health -= amount;
 }
 
 let splats = [];
@@ -1998,15 +2249,16 @@ function updateProjectiles(dt){
       pr.mesh.position.copy(hitPoint);
       if(hitRef && (!mpActive || hitRef===player)){
         const dmgMult = (pr.ownerRef!==player && hitRef!==player) ? BOT_VS_BOT_DMG_MULT : 1;
-        const dealt = pr.damage*dmgMult;
-        hitRef.health -= dealt;
+        const rangeMult = rangeDamageMultiplier(pr.falloff, pr.traveled+hitDist, pr.maxDist);
+        const dealt = pr.damage*dmgMult*rangeMult;
         hitRef.lastDamagedBy = pr.ownerRef;
+        applyDamage(hitRef, dealt);
         if(hitRef.isPlayer){ flashDamage(); sfxHurt(); }
         if(pr.ownerRef===player){ sfxHit(); showHitmarker(); spawnDamageNumber(hitPoint, dealt, hitWasHead); }
         if(hitRef.health<=0 && hitRef.alive) killEntity(hitRef, pr.ownerRef);
       } else if(hitRef && pr.ownerRef===player){
         sfxHit(); showHitmarker(); // still give the shooter feedback even though damage isn't authoritative here
-        spawnDamageNumber(hitPoint, pr.damage, hitWasHead);
+        spawnDamageNumber(hitPoint, pr.damage*rangeDamageMultiplier(pr.falloff, pr.traveled+hitDist, pr.maxDist), hitWasHead);
       }
       spawnImpactFlash(hitPoint, pr.color);
       removeProjectile(i);
@@ -2031,9 +2283,12 @@ function startReload(){
   player.reloadEndAt = performance.now() + g.reload;
 }
 function switchPlayerGun(){
-  if(!player.guns || player.guns[0]===player.guns[1]) return; // nothing to switch to
-  player.gunIndex = 1 - player.gunIndex;
-  player.gunKey = player.guns[player.gunIndex];
+  if(!player.guns) return;
+  const otherIndex = 1 - player.gunIndex;
+  const otherGun = player.guns[otherIndex];
+  if(!otherGun || otherGun === player.guns[player.gunIndex]) return; // empty slot or same gun - nothing to switch to
+  player.gunIndex = otherIndex;
+  player.gunKey = otherGun;
   player.reloading = false;
   if(player.ammo[player.gunKey] === undefined) player.ammo[player.gunKey] = GUNS[player.gunKey].mag;
   if(gunMesh) updateGunViewmodel();
@@ -2140,7 +2395,7 @@ function updateBot(bot, dt, zoneR){
       const effectiveSpread = g.spread * THREE.MathUtils.clamp(1.3/diff.hitMult, 0.3, 2.6);
       const dir = getSpreadDir(aimDir, effectiveSpread);
       const color = PAINT_COLORS[Math.floor(Math.random()*PAINT_COLORS.length)];
-      spawnProjectile(eyeA, dir, g.dmg*diff.dmgMult, g.range, bot, color);
+      spawnProjectile(eyeA, dir, g.dmg*diff.dmgMult, g.range, bot, color, g.falloff);
     }
   } else {
     // wander -- bias toward zone center if outside zone
@@ -2212,6 +2467,113 @@ function updateMedkits(dt){
   }
 }
 
+function giveWeaponToEntity(e, key){
+  if(e.isPlayer){
+    const targetIndex = 1 - e.gunIndex;
+    e.guns[targetIndex] = key;
+    e.ammo[key] = GUNS[key].mag;
+    addKillFeed('Found '+GUNS[key].name);
+  } else {
+    e.gunKey = key;
+  }
+}
+function openChestFor(e){
+  const roll = Math.random();
+  if(!e.isPlayer){
+    if(roll < 0.5){
+      giveWeaponToEntity(e, LOOT_WEAPON_POOL[Math.floor(Math.random()*LOOT_WEAPON_POOL.length)]);
+    } else {
+      e.shield = Math.min(MAX_SHIELD, (e.shield||0) + BIG_SHIELD_AMOUNT);
+    }
+    return;
+  }
+  if(roll < 0.65){
+    giveWeaponToEntity(player, LOOT_WEAPON_POOL[Math.floor(Math.random()*LOOT_WEAPON_POOL.length)]);
+  } else if(roll < 0.85){
+    player.bigShields = Math.min(MAX_CARRIED_SHIELDS, player.bigShields+1);
+    addKillFeed('Found a Big Shield ('+player.bigShields+'/'+MAX_CARRIED_SHIELDS+')');
+  } else {
+    player.bouncePads = Math.min(MAX_CARRIED_PADS, player.bouncePads+1);
+    addKillFeed('Found a Bounce Pad ('+player.bouncePads+'/'+MAX_CARRIED_PADS+')');
+  }
+}
+function updateChests(dt){
+  for(const c of chests){
+    if(!c.active) continue;
+    c.group.rotation.y += dt*0.6;
+    for(const e of entities){
+      if(!e.alive) continue;
+      let ex, ez;
+      if(e.isPlayer){ ex=camera.position.x; ez=camera.position.z; }
+      else { ex=e.mesh.position.x; ez=e.mesh.position.z; }
+      const d = Math.hypot(ex-c.x, ez-c.z);
+      if(d < PICKUP_RADIUS){
+        c.active = false;
+        c.group.visible = false;
+        openChestFor(e);
+        if(e.isPlayer){ sfxHeal(); }
+        break;
+      }
+    }
+  }
+}
+function updateShieldPots(dt){
+  const bob = performance.now()*0.002;
+  for(const p of shieldPots){
+    if(!p.active) continue;
+    p.group.rotation.y += dt*1.0;
+    p.group.position.y = 0.1 + Math.sin(bob+p.x)*0.06;
+    for(const e of entities){
+      if(!e.alive || (e.shield||0) >= MAX_SHIELD) continue;
+      let ex, ez;
+      if(e.isPlayer){ ex=camera.position.x; ez=camera.position.z; }
+      else { ex=e.mesh.position.x; ez=e.mesh.position.z; }
+      const d = Math.hypot(ex-p.x, ez-p.z);
+      if(d < PICKUP_RADIUS){
+        e.shield = Math.min(MAX_SHIELD, (e.shield||0) + SHIELD_POT_AMOUNT);
+        p.active = false;
+        p.group.visible = false;
+        if(e.isPlayer){ flashHeal(); sfxHeal(); addKillFeed('+'+SHIELD_POT_AMOUNT+' Shield'); }
+        break;
+      }
+    }
+  }
+}
+function updateBouncePads(dt){
+  for(const pad of bouncePadStructures){
+    pad.cooldownTimer = Math.max(0, (pad.cooldownTimer||0) - dt);
+    if(pad.cooldownTimer > 0) continue;
+    const dx = camera.position.x - pad.x, dz = camera.position.z - pad.z;
+    if(Math.hypot(dx,dz) < BOUNCE_PAD_RADIUS && player.alive && !player.skydiving){
+      player.velocityY = BOUNCE_PAD_VELOCITY;
+      player.airOffset = Math.max(player.airOffset, 0.15);
+      player.grounded = false;
+      pad.cooldownTimer = BOUNCE_PAD_COOLDOWN;
+      sfxHeal();
+    }
+  }
+}
+function useBigShield(){
+  if(gameState!=='playing' || player.skydiving) return;
+  if(player.bigShields <= 0){ addKillFeed('No Big Shields to use'); return; }
+  if(player.shield >= MAX_SHIELD){ addKillFeed('Shield already full'); return; }
+  player.bigShields--;
+  player.shield = Math.min(MAX_SHIELD, player.shield + BIG_SHIELD_AMOUNT);
+  flashHeal(); sfxHeal();
+}
+function throwBouncePadItem(){
+  if(gameState!=='playing' || player.skydiving) return;
+  if(player.bouncePads <= 0){ addKillFeed('No Bounce Pads to throw'); return; }
+  player.bouncePads--;
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
+  const px = camera.position.x + dir.x*3;
+  const pz = camera.position.z + dir.z*3;
+  const group = buildBouncePadStructure(px, pz);
+  bouncePadStructures.push({x:px, z:pz, group, cooldownTimer:0});
+  addKillFeed('Bounce pad placed');
+}
+
 function getZoneState(t){
   for(let i=0;i<zonePhases.length-1;i++){
     const a = zonePhases[i], b = zonePhases[i+1];
@@ -2251,10 +2613,12 @@ window.addEventListener('keydown', e=>{
   keys[e.code] = true;
   if(gameState==='playing'){
     if(e.code===KEYBINDS.reload) startReload();
-    if(e.code===KEYBINDS.jump) handleJumpOrMantle();
+    if(e.code===KEYBINDS.jump){ if(player.skydiving) deploySkydiveGlider(); else handleJumpOrMantle(); }
     if(e.code===KEYBINDS.slide) handleSlide();
     if(e.code===KEYBINDS.toggleView) viewMode = (viewMode==='first') ? 'third' : 'first';
     if(e.code===KEYBINDS.switchWeapon) switchPlayerGun();
+    if(e.code===KEYBINDS.useShield) useBigShield();
+    if(e.code===KEYBINDS.throwBouncePad) throwBouncePadItem();
     if(e.code===KEYBINDS.aim && !KEYBINDS.aim.startsWith('MOUSE')) player.aiming = true;
   }
 });
@@ -2287,6 +2651,86 @@ window.addEventListener('mouseup', e=>{
   isMouseDown = false;
   if(player) player.semiFired = false;
 });
+function buildGliderMesh(colorHex){
+  const group = new THREE.Group();
+  const canopyMat = new THREE.MeshStandardMaterial({color:colorHex, roughness:0.6, side:THREE.DoubleSide});
+  const canopy = new THREE.Mesh(new THREE.SphereGeometry(1.6, 14, 8, 0, Math.PI*2, 0, Math.PI*0.42), canopyMat);
+  canopy.rotation.x = Math.PI;
+  group.add(canopy);
+  const lineMat = new THREE.MeshBasicMaterial({color:0x222222});
+  for(let i=0;i<4;i++){
+    const a = (i/4)*Math.PI*2 + Math.PI/4;
+    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,1.3,4), lineMat);
+    line.position.set(Math.sin(a)*0.9, -0.6, Math.cos(a)*0.9);
+    line.rotation.x = Math.sin(a)*0.35;
+    line.rotation.z = Math.cos(a)*0.35;
+    group.add(line);
+  }
+  group.visible = false;
+  return group;
+}
+function updateSkydive(dt){
+  if(!player.skydiving) return;
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward); forward.y = 0; forward.normalize();
+  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+  let mx=0, mz=0;
+  if(keys[KEYBINDS.forward]){ mx+=forward.x; mz+=forward.z; }
+  if(keys[KEYBINDS.back]){ mx-=forward.x; mz-=forward.z; }
+  if(keys[KEYBINDS.right]){ mx+=right.x; mz+=right.z; }
+  if(keys[KEYBINDS.left]){ mx-=right.x; mz-=right.z; }
+  const len = Math.hypot(mx,mz);
+  const hSpeed = player.skydiveState==='gliding' ? GLIDER_H_SPEED : SKYDIVE_H_SPEED;
+  if(len>0.001){
+    const nx = mx/len, nz = mz/len;
+    const testX = camera.position.x + nx*hSpeed*dt;
+    const testZ = camera.position.z + nz*hSpeed*dt;
+    if(Math.hypot(testX,testZ) < currentMap.radius*1.5){
+      camera.position.x = testX;
+      camera.position.z = testZ;
+    }
+  }
+  if(player.skydiveState==='freefall'){
+    player.fallSpeed = Math.min(FREEFALL_MAX_SPEED, player.fallSpeed + FREEFALL_ACCEL*dt);
+    camera.position.y -= player.fallSpeed*dt;
+    if(camera.position.y <= GLIDER_DEPLOY_HEIGHT) deploySkydiveGlider();
+  } else if(player.skydiveState==='gliding'){
+    camera.position.y -= GLIDER_FALL_SPEED*dt;
+    if(camera.position.y <= EYE_HEIGHT) landSkydive();
+  }
+  if(gliderMesh){
+    gliderMesh.position.set(camera.position.x, camera.position.y+1.15, camera.position.z);
+  }
+}
+function deploySkydiveGlider(){
+  if(!player.skydiving || player.skydiveState==='gliding') return;
+  player.skydiveState = 'gliding';
+  player.fallSpeed = 0;
+  if(gliderMesh) gliderMesh.visible = true;
+  sfxHeal();
+}
+function landSkydive(){
+  player.skydiving = false;
+  camera.position.y = EYE_HEIGHT;
+  player.eyeHeight = EYE_HEIGHT;
+  player.airOffset = 0;
+  player.velocityY = 0;
+  player.grounded = true;
+  if(gliderMesh) gliderMesh.visible = false;
+  const hint = document.getElementById('skydiveHint');
+  if(hint) hint.style.display = 'none';
+}
+function updateSkydiveHUD(){
+  const hint = document.getElementById('skydiveHint');
+  if(!hint) return;
+  hint.style.display = 'block';
+  const alt = Math.max(0, Math.round(camera.position.y));
+  if(player.skydiveState==='freefall'){
+    hint.textContent = 'FREEFALLING — Alt '+alt+'m — Press SPACE to deploy glider';
+  } else {
+    hint.textContent = 'GLIDING — Alt '+alt+'m';
+  }
+}
 function handleJumpOrMantle(){
   if(!player.grounded || player.mantling) return;
   if(tryMantle()) return;
@@ -2352,6 +2796,8 @@ function startMatch(mapKey){
   playerBodyVisual.group.visible = false;
   playerBodyVisual.animPhase = 0;
   scene.add(playerBodyVisual.group);
+  gliderMesh = buildGliderMesh(getEquippedGliderColor());
+  scene.add(gliderMesh);
 
   renderer = new THREE.WebGLRenderer({canvas:document.getElementById('gameCanvas'), antialias:true});
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -2519,10 +2965,21 @@ function updateHUD(zoneState){
   clockEl.healthFill.style.width = hpPct+'%';
   clockEl.healthFill.style.background = hpPct>50 ? 'linear-gradient(90deg,#c6ff2d,#57e07a)' : (hpPct>20 ? 'linear-gradient(90deg,#ffcf2d,#ff9d2d)' : 'linear-gradient(90deg,#ff4d4d,#ff2d2d)');
 
+  const isBRMode = currentMap && currentMap.brLoot;
+  if(isBRMode){
+    clockEl.shieldBarBg.style.display = 'block';
+    clockEl.shieldFill.style.width = Math.max(0,player.shield)+'%';
+    clockEl.brInventoryHud.style.display = 'block';
+    clockEl.brInventoryHud.textContent = '🛡️ Big Shields: '+player.bigShields+' ['+keyLabel(KEYBINDS.useShield)+']  |  🟡 Bounce Pads: '+player.bouncePads+' ['+keyLabel(KEYBINDS.throwBouncePad)+']';
+  } else {
+    clockEl.shieldBarBg.style.display = 'none';
+    clockEl.brInventoryHud.style.display = 'none';
+  }
+
   const g = GUNS[player.gunKey];
   clockEl.weaponName.textContent = g.name;
-  if(player.guns && player.guns[0]!==player.guns[1]){
-    const otherKey = player.guns[1-player.gunIndex];
+  const otherKey = player.guns ? player.guns[1-player.gunIndex] : null;
+  if(otherKey && otherKey !== player.gunKey){
     clockEl.otherWeaponHint.textContent = '[Q] '+GUNS[otherKey].name;
   } else {
     clockEl.otherWeaponHint.textContent = '';
@@ -2565,6 +3022,11 @@ function animate(){
 
   if(gameState==='playing'){
     matchElapsed += dt;
+
+    if(player.skydiving){
+      updateSkydive(dt);
+      updateSkydiveHUD();
+    } else {
 
     // slide timer
     if(player.sliding){
@@ -2610,7 +3072,9 @@ function animate(){
     }
 
     // aim-down-sights FOV zoom
-    const targetFov = player.aiming ? AIM_FOV : HIP_FOV;
+    const currentGunDef = GUNS[player.gunKey];
+    const aimFov = (player.aiming && currentGunDef && currentGunDef.scoped) ? SCOPE_FOV : AIM_FOV;
+    const targetFov = player.aiming ? aimFov : HIP_FOV;
     player.currentFov += (targetFov - player.currentFov) * Math.min(dt*10, 1);
     if(Math.abs(camera.fov - player.currentFov) > 0.05){
       camera.fov = player.currentFov;
@@ -2722,6 +3186,9 @@ function animate(){
 
     updateProjectiles(dt);
     updateMedkits(dt);
+    updateChests(dt);
+    updateShieldPots(dt);
+    updateBouncePads(dt);
     updatePlayerBodyVisual(dt, isMovingThisFrame);
     if(viewMode==='third') updateThirdPersonCamera();
     updateTracers();
@@ -2752,6 +3219,7 @@ function animate(){
       if(matchElapsed >= HARD_TIME_LIMIT && gameState==='playing'){
         endMatch(player.alive, null);
       }
+    }
     }
   }
 
@@ -2826,6 +3294,81 @@ function setPreviewCamera(mode){
     shopPreviewCamera.lookAt(0,0,0);
   }
 }
+
+/* ============================================================
+   THUMBNAIL RENDERING (one reused offscreen context - safe, no
+   risk of exhausting the browser's WebGL context limit)
+   ============================================================ */
+let thumbRenderer, thumbScene, thumbCamera;
+const thumbCache = {};
+function initThumbnailRenderer(){
+  if(thumbRenderer) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = 220; canvas.height = 220;
+  thumbRenderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, preserveDrawingBuffer:true});
+  thumbRenderer.setSize(220,220,false);
+  thumbRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  thumbRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  thumbScene = new THREE.Scene();
+  thumbScene.add(new THREE.HemisphereLight(0xffffff,0x22223a,1.25));
+  const sun = new THREE.DirectionalLight(0xffffff,1.0);
+  sun.position.set(2,4,3);
+  thumbScene.add(sun);
+  thumbCamera = new THREE.PerspectiveCamera(30,1,0.1,10);
+}
+function disposeThumbObject(obj){
+  obj.traverse(node=>{
+    if(node.isMesh){
+      node.geometry.dispose();
+      const mats = Array.isArray(node.material) ? node.material : [node.material];
+      mats.forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); });
+    }
+  });
+}
+function getSkinThumbnail(skinDef){
+  if(thumbCache['skin_'+skinDef.id]) return thumbCache['skin_'+skinDef.id];
+  initThumbnailRenderer();
+  thumbCamera.position.set(0,1.32,2.9);
+  thumbCamera.lookAt(0,1.15,0);
+  const visual = buildMannequinVisual(skinDef);
+  thumbScene.add(visual.group);
+  thumbRenderer.render(thumbScene, thumbCamera);
+  const url = thumbRenderer.domElement.toDataURL('image/png');
+  thumbScene.remove(visual.group);
+  disposeThumbObject(visual.group);
+  thumbCache['skin_'+skinDef.id] = url;
+  return url;
+}
+function getGunThumbnail(cacheKey, shapeKey, colorHex){
+  if(thumbCache[cacheKey]) return thumbCache[cacheKey];
+  initThumbnailRenderer();
+  thumbCamera.position.set(0,0.12,0.85);
+  thumbCamera.lookAt(0,0,0);
+  const model = buildPaintballGunModel(colorHex, shapeKey);
+  thumbScene.add(model);
+  thumbRenderer.render(thumbScene, thumbCamera);
+  const url = thumbRenderer.domElement.toDataURL('image/png');
+  thumbScene.remove(model);
+  disposeThumbObject(model);
+  thumbCache[cacheKey] = url;
+  return url;
+}
+function getGliderThumbnail(gliderDef){
+  const cacheKey = 'glider_'+gliderDef.id;
+  if(thumbCache[cacheKey]) return thumbCache[cacheKey];
+  initThumbnailRenderer();
+  thumbCamera.position.set(0,0.3,3.2);
+  thumbCamera.lookAt(0,0,0);
+  const model = buildGliderMesh(gliderDef.color);
+  model.visible = true;
+  thumbScene.add(model);
+  thumbRenderer.render(thumbScene, thumbCamera);
+  const url = thumbRenderer.domElement.toDataURL('image/png');
+  thumbScene.remove(model);
+  disposeThumbObject(model);
+  thumbCache[cacheKey] = url;
+  return url;
+}
 function clearShopPreviewObject(){
   if(shopPreviewObject){ shopPreviewScene.remove(shopPreviewObject); shopPreviewObject = null; }
 }
@@ -2881,9 +3424,12 @@ function buildPaintballGunModel(colorHex, shapeKey){
   if(shapeKey==='sniper'){ barrelLen=0.78; bodyLen=0.3; }
   else if(shapeKey==='shotgun'){ barrelLen=0.3; bodyLen=0.3; }
   else if(shapeKey==='smg'){ barrelLen=0.26; bodyLen=0.22; }
+  else if(shapeKey==='heavyrifle'){ barrelLen=0.56; bodyLen=0.34; }
 
   // receiver body
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.11,bodyLen), mat);
+  const bodyWidth = shapeKey==='heavyrifle' ? 0.12 : 0.09;
+  const bodyHeight = shapeKey==='heavyrifle' ? 0.14 : 0.11;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth,bodyHeight,bodyLen), mat);
   group.add(body);
   // barrel
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.022,barrelLen,8), mat);
@@ -2987,6 +3533,10 @@ function updateEquippedLabels(){
    ============================================================ */
 function hexColor(n){ return '#'+n.toString(16).padStart(6,'0'); }
 
+function rarityCardBg(rarity){
+  const c = RARITY_COLORS[rarity] || '#2a2a38';
+  return 'linear-gradient(165deg, '+c+'40, #15151f 65%)';
+}
 function renderShop(){
   updateCoinDisplays();
   const skinList = document.getElementById('skinShopList');
@@ -2996,15 +3546,17 @@ function renderShop(){
     const equipped = save.equippedSkin===s.id;
     const item = document.createElement('div');
     item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
-    item.style.borderColor = equipped ? '' : (RARITY_COLORS[s.rarity]||'#2a2a38');
     const trait = s.accessory!=='none' ? s.accessory : (s.helmet!=='none' ? s.helmet : 'basic');
+    const thumb = getSkinThumbnail(s);
     item.innerHTML =
+      '<div class="shopCardInner" style="--rarity-bg:'+rarityCardBg(s.rarity)+';">'+
       '<div class="rarityTag" style="color:'+RARITY_COLORS[s.rarity]+';">'+s.rarity+'</div>'+
-      '<div class="shopSwatch" style="background:linear-gradient(135deg,'+hexColor(s.vest)+','+hexColor(s.accent)+')"></div>'+
+      '<div class="shopSwatch" style="background-image:url('+thumb+');"></div>'+
       '<b>'+s.name+'</b>'+
       '<div class="cost" style="text-transform:capitalize;color:#9a9ab0;">'+trait+'</div>'+
       '<div class="cost">'+(s.cost===0?'FREE':'🪙 '+s.cost.toLocaleString())+'</div>'+
-      '<button data-type="skin" data-id="'+s.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+      '<button data-type="skin" data-id="'+s.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>'+
+      '</div>';
     const btn = item.querySelector('button');
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<s.cost) btn.disabled = true;
@@ -3029,16 +3581,18 @@ function renderShop(){
     const inOtherSlot = save.equippedWeapons[1-activeLoadoutSlot]===key;
     const item = document.createElement('div');
     item.className = 'shopItem'+(owned?' owned':'')+(inActiveSlot?' equipped':'');
-    item.style.borderColor = inActiveSlot ? '' : (RARITY_COLORS[w.rarity]||'#2a2a38');
     const slotNote = inOtherSlot ? '<div class="cost" style="color:var(--cyan);">in other slot</div>' : '';
+    const thumb = getGunThumbnail('weapon_'+key, key, w.color);
     item.innerHTML =
+      '<div class="shopCardInner" style="--rarity-bg:'+rarityCardBg(w.rarity)+';">'+
       '<div class="rarityTag" style="color:'+RARITY_COLORS[w.rarity]+';">'+w.rarity+'</div>'+
-      '<div class="shopSwatch" style="background:'+hexColor(w.color)+'"></div>'+
+      '<div class="shopSwatch" style="background-image:url('+thumb+'); background-color:#1a1a24;"></div>'+
       '<b>'+w.name+'</b>'+
       '<div class="cost" style="text-transform:none;color:#9a9ab0;">Dmg '+w.dmg+' · Mag '+w.mag+'</div>'+
       '<div class="cost">'+(w.cost===0?'FREE':'🪙 '+w.cost.toLocaleString())+'</div>'+
       slotNote+
-      '<button data-type="weapon" data-id="'+key+'">'+(inActiveSlot?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+      '<button data-type="weapon" data-id="'+key+'">'+(inActiveSlot?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>'+
+      '</div>';
     const btn = item.querySelector('button');
     if(inActiveSlot) btn.classList.add('equippedBtn');
     if(!owned && save.coins<w.cost) btn.disabled = true;
@@ -3057,11 +3611,14 @@ function renderShop(){
     const equipped = save.equippedGun===g.id;
     const item = document.createElement('div');
     item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    const thumb = getGunThumbnail('rig_'+g.id+'_'+save.equippedWeapons[0], save.equippedWeapons[0], g.color);
     item.innerHTML =
-      '<div class="shopSwatch" style="background:'+hexColor(g.color)+'"></div>'+
+      '<div class="shopCardInner" style="--rarity-bg:linear-gradient(165deg, #2a2a3840, #15151f 65%);">'+
+      '<div class="shopSwatch" style="background-image:url('+thumb+'); background-color:#1a1a24;"></div>'+
       '<b>'+g.name+'</b>'+
       '<div class="cost">'+(g.cost===0?'FREE':'🪙 '+g.cost)+'</div>'+
-      '<button data-type="gun" data-id="'+g.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+      '<button data-type="gun" data-id="'+g.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>'+
+      '</div>';
     const btn = item.querySelector('button');
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<g.cost) btn.disabled = true;
@@ -3071,6 +3628,31 @@ function renderShop(){
       item.classList.add('previewing');
     });
     gunList.appendChild(item);
+  });
+
+  const gliderList = document.getElementById('gliderShopList');
+  gliderList.innerHTML = '';
+  GLIDER_SKINS.forEach(gl=>{
+    const owned = save.ownedGliders.includes(gl.id);
+    const equipped = save.equippedGlider===gl.id;
+    const item = document.createElement('div');
+    item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
+    const thumb = getGliderThumbnail(gl);
+    item.innerHTML =
+      '<div class="shopCardInner" style="--rarity-bg:linear-gradient(165deg, #4d9fff40, #15151f 65%);">'+
+      '<div class="shopSwatch" style="background-image:url('+thumb+'); background-color:#1a1a24;"></div>'+
+      '<b>'+gl.name+'</b>'+
+      '<div class="cost">'+(gl.cost===0?'FREE':'🪙 '+gl.cost)+'</div>'+
+      '<button data-type="glider" data-id="'+gl.id+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>'+
+      '</div>';
+    const btn = item.querySelector('button');
+    if(equipped) btn.classList.add('equippedBtn');
+    if(!owned && save.coins<gl.cost) btn.disabled = true;
+    item.addEventListener('click', ()=>{
+      gliderList.querySelectorAll('.shopItem').forEach(el=>el.classList.remove('previewing'));
+      item.classList.add('previewing');
+    });
+    gliderList.appendChild(item);
   });
 }
 
@@ -3088,6 +3670,11 @@ function handleShopClick(e){
     if(!w) return;
     if(save.ownedWeapons.includes(id)) save.equippedWeapons[activeLoadoutSlot] = id;
     else if(save.coins>=w.cost){ save.coins -= w.cost; save.ownedWeapons.push(id); save.equippedWeapons[activeLoadoutSlot] = id; }
+  } else if(type==='glider'){
+    const gl = GLIDER_SKINS.find(x=>x.id===id);
+    if(!gl) return;
+    if(save.ownedGliders.includes(id)) save.equippedGlider = id;
+    else if(save.coins>=gl.cost){ save.coins -= gl.cost; save.ownedGliders.push(id); save.equippedGlider = id; }
   } else {
     const g = GUN_SKINS.find(x=>x.id===id);
     if(!g) return;
@@ -3100,10 +3687,19 @@ function handleShopClick(e){
   rebuildLobbyMannequin();
 }
 document.getElementById('skinShopList').addEventListener('click', handleShopClick);
+document.getElementById('gliderShopList').addEventListener('click', handleShopClick);
 document.getElementById('weaponShopList').addEventListener('click', handleShopClick);
 document.getElementById('gunShopList').addEventListener('click', handleShopClick);
 document.getElementById('slotPrimaryBtn').addEventListener('click', ()=>{ activeLoadoutSlot = 0; renderShop(); });
 document.getElementById('slotSecondaryBtn').addEventListener('click', ()=>{ activeLoadoutSlot = 1; renderShop(); });
+document.querySelectorAll('.shopTab').forEach(tabBtn=>{
+  tabBtn.addEventListener('click', ()=>{
+    document.querySelectorAll('.shopTab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.shopTabPanel').forEach(p=>p.style.display='none');
+    tabBtn.classList.add('active');
+    document.getElementById(tabBtn.dataset.tab).style.display = 'block';
+  });
+});
 document.getElementById('openShopBtn').addEventListener('click', ()=>{
   document.getElementById('menu').style.display = 'none';
   document.getElementById('shopScreen').style.display = 'block';
@@ -3433,14 +4029,14 @@ function mpReceiveShot(msg){
   const origin = new THREE.Vector3(msg.ox, msg.oy, msg.oz);
   (msg.dirs||[]).forEach(d=>{
     const dir = new THREE.Vector3(d[0], d[1], d[2]);
-    spawnProjectile(origin, dir, msg.dmg, msg.range, mpRemoteEntity, msg.color);
+    spawnProjectile(origin, dir, msg.dmg, msg.range, mpRemoteEntity, msg.color, msg.falloff);
   });
 }
 
-function mpBroadcastShot(origin, dirs, dmg, range, color){
+function mpBroadcastShot(origin, dirs, dmg, range, color, falloff){
   if(!mpActive || !mpConn || !mpConn.open) return;
   const dirList = dirs.map(d=>[d.x,d.y,d.z]);
-  mpConn.send({type:'shot', ox:origin.x, oy:origin.y, oz:origin.z, dirs:dirList, dmg, range, color});
+  mpConn.send({type:'shot', ox:origin.x, oy:origin.y, oz:origin.z, dirs:dirList, dmg, range, color, falloff});
 }
 
 function handleMultiplayerDeath(ent, killer){
@@ -3553,6 +4149,19 @@ function updateDailyButtonBadge(){
   if(!btn) return;
   btn.classList.toggle('dailyAvailable', dailyAvailable());
 }
+// restore last-used match settings
+selectedDifficulty = save.lastDifficulty || 2;
+diffSlider.value = selectedDifficulty;
+diffLabel.textContent = DIFFICULTY_SETTINGS[selectedDifficulty-1].name;
+diffDesc.textContent = DIFFICULTY_SETTINGS[selectedDifficulty-1].desc;
+selectedPlayerCount = save.lastPlayerCount || 8;
+playerCountSlider.value = selectedPlayerCount;
+playerCountLabel.textContent = selectedPlayerCount+' PLAYER'+(selectedPlayerCount===1?'':'S');
+selectedMap = save.lastMap || 'sandlot';
+document.querySelectorAll('.mapCard').forEach(c=>{
+  c.classList.toggle('selected', c.dataset.map===selectedMap);
+});
+
 updateDailyButtonBadge();
 initLobbyScene();
 initShopPreview();
