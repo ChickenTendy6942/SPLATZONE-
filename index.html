@@ -31,15 +31,16 @@
   /* ---------- MENU ---------- */
   #menu{
     position:fixed; inset:0; z-index:50;
-    display:flex; align-items:center; justify-content:center;
+    display:block;
     background:
       radial-gradient(circle at 15% 20%, rgba(255,45,120,.35), transparent 40%),
       radial-gradient(circle at 85% 75%, rgba(45,230,255,.30), transparent 45%),
       radial-gradient(circle at 60% 10%, rgba(198,255,45,.18), transparent 35%),
       var(--bg);
     overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
   }
-  .menuWrap{width:min(920px, 92vw); padding:36px 0;}
+  .menuWrap{width:min(920px, 92vw); margin:0 auto; padding:36px 0;}
   .titleBlock{text-align:center; margin-bottom:26px;}
   .titleBlock h1{
     font-size:clamp(38px,7vw,64px);
@@ -109,8 +110,9 @@
   /* ---------- HUD ---------- */
   #hud{position:fixed; inset:0; z-index:20; pointer-events:none; display:none; font-family:'Inter',sans-serif;}
   #crosshair{
-    position:absolute; top:50%; left:50%; width:20px; height:20px; transform:translate(-50%,-50%);
-    transition:opacity .12s;
+    position:absolute; top:50%; left:50%; width:20px; height:20px;
+    transform:translate(-50%,-50%) scale(var(--bloom, 1));
+    transition:opacity .12s, transform .08s;
   }
   #crosshair.aiming{opacity:0.25;}
   #crosshair::before, #crosshair::after{
@@ -365,10 +367,10 @@
     <div class="panel">
       <h2>2b. LOBBY SIZE</h2>
       <div class="diffRow">
-        <input type="range" id="playerCountSlider" min="2" max="8" step="1" value="8">
+        <input type="range" id="playerCountSlider" min="2" max="15" step="1" value="8">
         <div id="playerCountLabel">8 PLAYERS</div>
       </div>
-      <p class="hint">You + up to 7 bots. Smaller lobbies mean less competition but fewer targets too.</p>
+      <p class="hint">You + up to 14 bots. Smaller lobbies mean less competition but fewer targets too.</p>
     </div>
 
     <div class="panel">
@@ -720,6 +722,7 @@ const PER_KILL_COINS = 15;
 const MEDKIT_HEAL = 50;
 const MEDKIT_RADIUS = 1.1;
 const PROJECTILE_GRAVITY = 10; // bullet drop for that real-paintball arc
+const BOT_VS_BOT_DMG_MULT = 0.6; // bots go easier on each other so matches don't get wiped out too fast
 const AIM_SPREAD_MULT = 0.12; // spread multiplier while aiming down sights ("ADS")
 const AIM_FOV = 55;
 const HIP_FOV = 75;
@@ -1060,6 +1063,16 @@ function tryMove(pos, dx, dz, radius, hardBoundary){
   if(!collides(pos.x,nz,radius,hardBoundary)){ pos.z=nz; moved = true; }
   return moved;
 }
+const STEER_ANGLES = [0, 0.35, -0.35, 0.7, -0.7, 1.2, -1.2, 1.8, -1.8, 2.5, -2.5];
+function tryMoveSteered(pos, dirX, dirZ, dist, radius, hardBoundary){
+  for(const ang of STEER_ANGLES){
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const rx = dirX*cos - dirZ*sin, rz = dirX*sin + dirZ*cos;
+    const nx = pos.x + rx*dist, nz = pos.z + rz*dist;
+    if(!collides(nx, nz, radius, hardBoundary)){ pos.x = nx; pos.z = nz; return true; }
+  }
+  return false;
+}
 function hasLineOfSight(fromPos, toPos){
   const dir = new THREE.Vector3().subVectors(toPos, fromPos);
   const dist = dir.length();
@@ -1260,7 +1273,8 @@ function spawnEntities(){
   entities = [];
   projectiles = [];
   tracers = [];
-  const botNamePool = ['noobmaster67','CrazyPea96','WildCactusBob','Gooddoggo80','WalkInThePark66','Grandma40','AtTheBeach321','DoubleDaring'];
+  splats = [];
+  const botNamePool = ['noobmaster67','CrazyPea96','WildCactusBob','Gooddoggo80','WalkInThePark66','Grandma40','AtTheBeach321','DoubleDaring','soggybiscuit11','boxedbysigma','fishyflaps49','fullboxed','clipped14','true alpha67'];
   for(let i=botNamePool.length-1;i>0;i--){
     const j = Math.floor(Math.random()*(i+1));
     const tmp = botNamePool[i]; botNamePool[i] = botNamePool[j]; botNamePool[j] = tmp;
@@ -1376,6 +1390,7 @@ function playerFire(){
   player.lastShot = now;
   player.ammo[player.gunKey]--;
   sfxShoot(g.key);
+  playerBloom = Math.min(1, playerBloom + (player.aiming ? 0.12 : 0.3));
   flashMuzzle();
 
   const origin = new THREE.Vector3();
@@ -1410,22 +1425,49 @@ function spawnProjectile(origin, dir, damage, range, ownerRef, color){
   });
 }
 
-function spawnImpactFlash(point, color){
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({color, transparent:true, opacity:1, depthTest:false}));
-  spr.position.copy(point);
-  spr.scale.set(0.05,0.05,0.05);
-  scene.add(spr);
-  const start = performance.now();
-  const dur = 170;
-  function step(){
-    const t = Math.min((performance.now()-start)/dur, 1);
-    const s = 0.05 + t*0.55;
-    spr.scale.set(s,s,s);
-    spr.material.opacity = 1-t;
-    if(t<1) requestAnimationFrame(step);
-    else { scene.remove(spr); spr.material.dispose(); }
+let splats = [];
+const MAX_SPLATS = 40;
+function makeSplatTexture(colorHex){
+  const c = document.createElement('canvas'); c.width=64; c.height=64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#'+colorHex.toString(16).padStart(6,'0');
+  const blobs = [[32,32,14],[24,26,7],[40,28,6],[30,42,8],[42,40,5],[20,38,5],[36,20,5]];
+  blobs.forEach(b=>{ ctx.beginPath(); ctx.arc(b[0],b[1],b[2],0,Math.PI*2); ctx.fill(); });
+  for(let i=0;i<6;i++){
+    const a = Math.random()*Math.PI*2, d = 20+Math.random()*14;
+    ctx.beginPath(); ctx.arc(32+Math.cos(a)*d, 32+Math.sin(a)*d, 1.5+Math.random()*2, 0, Math.PI*2); ctx.fill();
   }
-  requestAnimationFrame(step);
+  return new THREE.CanvasTexture(c);
+}
+function spawnImpactFlash(point, color){
+  const mat = new THREE.SpriteMaterial({map:makeSplatTexture(color), transparent:true, opacity:0, depthTest:false});
+  const spr = new THREE.Sprite(mat);
+  spr.position.copy(point);
+  spr.material.rotation = Math.random()*Math.PI*2;
+  const size = 0.16 + Math.random()*0.1;
+  spr.scale.set(size,size,size);
+  scene.add(spr);
+  splats.push({sprite:spr, born:performance.now()});
+  if(splats.length > MAX_SPLATS){
+    const old = splats.shift();
+    scene.remove(old.sprite); old.sprite.material.map.dispose(); old.sprite.material.dispose();
+  }
+}
+function updateSplats(){
+  const now = performance.now();
+  for(let i=splats.length-1;i>=0;i--){
+    const s = splats[i];
+    const age = now - s.born;
+    if(age < 90) s.sprite.material.opacity = age/90;
+    else if(age < 2200) s.sprite.material.opacity = 1;
+    else if(age < 2600) s.sprite.material.opacity = 1 - (age-2200)/400;
+    else {
+      scene.remove(s.sprite);
+      s.sprite.material.map.dispose();
+      s.sprite.material.dispose();
+      splats.splice(i,1);
+    }
+  }
 }
 
 function removeProjectile(i){
@@ -1476,7 +1518,8 @@ function updateProjectiles(dt){
     if(hitPoint){
       pr.mesh.position.copy(hitPoint);
       if(hitRef){
-        hitRef.health -= pr.damage;
+        const dmgMult = (pr.ownerRef!==player && hitRef!==player) ? BOT_VS_BOT_DMG_MULT : 1;
+        hitRef.health -= pr.damage*dmgMult;
         hitRef.lastDamagedBy = pr.ownerRef;
         if(hitRef.isPlayer){ flashDamage(); sfxHurt(); }
         if(pr.ownerRef===player){ sfxHit(); showHitmarker(); }
@@ -1627,9 +1670,14 @@ function updateBot(bot, dt, zoneR){
   }
 
   if(moveDir){
-    const dx = moveDir.x*BOT_SPEED*dt, dz = moveDir.z*BOT_SPEED*dt;
-    const moved = tryMove(myPos, dx, dz, BOT_RADIUS, currentMap.radius*1.5);
-    if(!moved) bot.wanderTarget = null;
+    const dist = BOT_SPEED*dt;
+    const moved = tryMoveSteered(myPos, moveDir.x, moveDir.z, dist, BOT_RADIUS, currentMap.radius*1.5);
+    if(!moved){
+      bot.stuckTimer = (bot.stuckTimer||0) + dt;
+      if(bot.stuckTimer > 0.6) bot.wanderTarget = null;
+    } else {
+      bot.stuckTimer = 0;
+    }
     bot.animPhase += dt*8;
   } else {
     bot.animPhase += dt*2; // slow idle sway instead of a hard freeze
@@ -1703,6 +1751,7 @@ function flashHeal(){
    ============================================================ */
 const keys = {};
 let isMouseDown = false;
+let playerBloom = 0; // visual crosshair bloom, 0=tight 1=max spread
 window.addEventListener('keydown', e=>{
   keys[e.code] = true;
   if(gameState==='playing'){
@@ -1935,12 +1984,26 @@ function updatePlayerBodyVisual(dt, isMoving){
   const dir = new THREE.Vector3();
   camera.getWorldDirection(dir); dir.y = 0;
   if(dir.lengthSq() > 0.0001) playerBodyVisual.group.rotation.y = Math.atan2(dir.x, dir.z);
-  playerBodyVisual.animPhase += dt * (isMoving ? 8 : 2);
-  const swing = Math.sin(playerBodyVisual.animPhase) * (isMoving ? 0.55 : 0.06);
-  playerBodyVisual.legL.rotation.x = swing;
-  playerBodyVisual.legR.rotation.x = -swing;
-  playerBodyVisual.armL.rotation.x = -swing*0.85;
-  playerBodyVisual.armR.rotation.x = swing*0.85;
+
+  if(player.sliding){
+    // sliding pose: lean back, legs spread into a slide stance
+    playerBodyVisual.group.rotation.x += (-0.32 - playerBodyVisual.group.rotation.x) * Math.min(dt*12,1);
+    playerBodyVisual.legL.rotation.x += (0.95 - playerBodyVisual.legL.rotation.x) * Math.min(dt*12,1);
+    playerBodyVisual.legR.rotation.x += (-0.5 - playerBodyVisual.legR.rotation.x) * Math.min(dt*12,1);
+    playerBodyVisual.armL.rotation.x += (-0.6 - playerBodyVisual.armL.rotation.x) * Math.min(dt*12,1);
+    playerBodyVisual.armR.rotation.x += (-0.6 - playerBodyVisual.armR.rotation.x) * Math.min(dt*12,1);
+    return;
+  }
+  playerBodyVisual.group.rotation.x += (0 - playerBodyVisual.group.rotation.x) * Math.min(dt*10,1);
+
+  const swingSpeed = player.sprinting ? 13 : (isMoving ? 8 : 2);
+  const swingAmt = player.sprinting ? 0.85 : (isMoving ? 0.55 : 0.06);
+  playerBodyVisual.animPhase += dt * swingSpeed;
+  const swing = Math.sin(playerBodyVisual.animPhase) * swingAmt;
+  playerBodyVisual.legL.rotation.x += (swing - playerBodyVisual.legL.rotation.x) * Math.min(dt*16,1);
+  playerBodyVisual.legR.rotation.x += (-swing - playerBodyVisual.legR.rotation.x) * Math.min(dt*16,1);
+  playerBodyVisual.armL.rotation.x += (-swing*0.85 - playerBodyVisual.armL.rotation.x) * Math.min(dt*16,1);
+  playerBodyVisual.armR.rotation.x += (swing*0.85 - playerBodyVisual.armR.rotation.x) * Math.min(dt*16,1);
 }
 
 function updateHUD(zoneState){
@@ -1958,6 +2021,7 @@ function updateHUD(zoneState){
   clockEl.sprintFill.style.width = sprintPct+'%';
   clockEl.sprintFill.classList.toggle('cooling', player.sprintCooldown>0);
   clockEl.crosshair.classList.toggle('aiming', player.aiming);
+  clockEl.crosshair.style.setProperty('--bloom', (1 + playerBloom*2.2).toFixed(2));
 
   clockEl.matchTimer.textContent = formatTime(matchElapsed);
   const aliveBots = entities.filter(e=>!e.isPlayer && e.alive).length;
@@ -2000,6 +2064,9 @@ function animate(){
     if(keys[KEYBINDS.left]){ mx-=right.x; mz-=right.z; }
     const len = Math.hypot(mx,mz);
     const isMovingThisFrame = len > 0.001;
+    playerBloom = Math.max(0, playerBloom - dt*1.6);
+    if(isMovingThisFrame && !player.aiming) playerBloom = Math.max(playerBloom, player.sprinting ? 0.55 : 0.25);
+    if(player.aiming) playerBloom = Math.min(playerBloom, 0.15);
 
     // tactical sprint: short burst, then forced cooldown
     const wantsSprint = !!keys[KEYBINDS.sprint] && len>0.001 && player.grounded && !player.sliding && !player.crouching && !player.aiming;
@@ -2114,6 +2181,7 @@ function animate(){
     updatePlayerBodyVisual(dt, isMovingThisFrame);
     if(viewMode==='third') updateThirdPersonCamera();
     updateTracers();
+    updateSplats();
     updateHUD(zoneState);
     drawMinimap(zr);
 
