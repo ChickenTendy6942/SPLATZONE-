@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SPLATZONE // Paintball Battle Royale</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://unpkg.com/peerjs/dist/peerjs.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -215,6 +216,15 @@
   #lobbyCanvas{width:100%; height:100%; display:block;}
   .lobbyInfo{flex:1; min-width:220px;}
   #coinDisplay{font-family:'Archivo Black'; font-size:24px; color:#ffd54d; margin-bottom:10px;}
+  .usernameRow{display:flex; gap:6px; margin-bottom:10px;}
+  #usernameInput{
+    background:#1a1a24; border:1px solid var(--line); color:#fff; border-radius:5px;
+    padding:7px 9px; font-size:12.5px; width:140px;
+  }
+  #usernameSaveBtn{
+    background:var(--lime); border:none; color:#0c0c12; font-family:'Archivo Black';
+    font-size:11px; padding:7px 12px; border-radius:5px; cursor:pointer;
+  }
   .equippedLine{font-size:13px; color:#c8c8d8; margin-bottom:4px;}
   .equippedLine b{color:var(--cyan);}
   .lobbyBtn{
@@ -254,24 +264,26 @@
   }
   .wheelResult{font-family:'Archivo Black'; font-size:20px; color:var(--lime); min-height:28px; margin-top:6px;}
 
-  #secretCodeBox{
-    position:fixed; top:14px; left:14px; z-index:5;
-    background:rgba(15,15,22,.85); border:1px solid var(--line); border-radius:8px;
-    padding:8px; display:flex; gap:6px; align-items:center;
+  #mpScreen{
+    display:none; position:fixed; inset:0; z-index:56; background:var(--bg); overflow-y:auto;
   }
-  #secretCodeInput{
-    background:#1a1a24; border:1px solid var(--line); color:#fff; border-radius:5px;
-    padding:7px 8px; font-size:11px; width:130px;
+  .mpStatus{margin-top:12px; font-size:13px; line-height:1.7; color:#c8c8d8;}
+  .mpStatus b{color:var(--lime);}
+  #mpMapSelect, #mpDurationSelect{
+    background:#1a1a24; border:1px solid var(--line); color:#fff; border-radius:6px; padding:8px 10px; font-size:13px; flex:1;
   }
-  #secretCodeBtn{
-    background:var(--cyan); border:none; color:#0c0c12; font-family:'Archivo Black';
-    font-size:10.5px; padding:8px 10px; border-radius:5px; cursor:pointer; white-space:nowrap;
+  #mpCodeInput{
+    background:#1a1a24; border:1px solid var(--line); color:#fff; border-radius:6px; padding:10px; font-size:16px;
+    letter-spacing:2px; width:140px; font-family:'Archivo Black';
   }
-  #secretCodeBtn:disabled, #secretCodeInput:disabled{opacity:.4; cursor:not-allowed;}
-  #secretCodeMsg{
-    position:absolute; top:100%; left:0; margin-top:6px; font-size:11px; white-space:nowrap;
-    background:rgba(15,15,22,.92); padding:5px 8px; border-radius:5px;
+  #roomCodeBig{font-family:'Archivo Black'; font-size:32px; color:var(--cyan); letter-spacing:4px; margin:8px 0;}
+  #mpKillFeedHud{position:absolute; top:70px; left:18px; font-size:13px; color:#fff;}
+  #mpLeaderboard{
+    position:absolute; top:18px; left:50%; transform:translateX(-50%); text-align:center;
+    font-family:'Archivo Black'; background:rgba(10,10,16,.6); padding:8px 18px; border-radius:8px;
   }
+  #mpTimerText{font-size:22px;}
+  #mpScoreText{font-size:14px; color:#c6ff2d; margin-top:2px;}
   .shopPreviewStage{
     width:260px; height:260px; margin:0 auto 6px; border-radius:12px; overflow:hidden; position:relative;
     background:radial-gradient(circle at 50% 30%, #2a2a3e, #0f0f16); border:1px solid var(--line);
@@ -330,11 +342,6 @@
 
 <!-- MENU -->
 <div id="menu">
-  <div id="secretCodeBox">
-    <input type="text" id="secretCodeInput" placeholder="Secret code...">
-    <button id="secretCodeBtn">REDEEM</button>
-    <div id="secretCodeMsg"></div>
-  </div>
   <div class="menuWrap">
     <div class="titleBlock">
       <h1>SPLATZONE</h1>
@@ -349,11 +356,16 @@
         </div>
         <div class="lobbyInfo">
           <div id="coinDisplay">🪙 <span id="coinAmount">0</span></div>
+          <div class="usernameRow">
+            <input type="text" id="usernameInput" maxlength="18" placeholder="Your name">
+            <button id="usernameSaveBtn">SAVE</button>
+          </div>
           <div class="equippedLine">Skin: <b id="equippedSkinName">Crimson</b></div>
           <div class="equippedLine">Gun rig: <b id="equippedGunName">Stock</b></div>
           <button id="openShopBtn" class="lobbyBtn">OPEN SHOP</button>
           <button id="openSettingsBtn" class="lobbyBtn secondary">SETTINGS</button>
           <button id="openDailyBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#ffd54d,#ff9d3d); color:#2a1c00;">🎁 DAILY REWARD</button>
+          <button id="openMpBtn" class="lobbyBtn" style="background:linear-gradient(90deg,#2de6ff,#39ff8f); color:#0c0c12;">⚔️ MULTIPLAYER DUEL</button>
 
           <div id="profileArea">
             <div id="profileSignedOut">
@@ -499,6 +511,54 @@
   </div>
 </div>
 
+<div id="mpScreen">
+  <div class="shopWrap">
+    <div class="shopHeader" style="justify-content:center;">
+      <h1 class="display">MULTIPLAYER DUEL</h1>
+    </div>
+    <p class="hint" style="text-align:center;">1v1 — most kills when the timer runs out wins. Peer-to-peer, no server — occasionally a connection just won't go through on some networks, that's a WebRTC/network thing, not a bug.</p>
+
+    <div id="mpChoiceRow" class="startRow" style="gap:16px; margin:20px 0;">
+      <button id="mpShowHostBtn" class="lobbyBtn">HOST A DUEL</button>
+      <button id="mpShowJoinBtn" class="lobbyBtn secondary">JOIN A DUEL</button>
+    </div>
+
+    <div id="mpHostPanel" class="panel" style="display:none;">
+      <h2>HOST</h2>
+      <div class="diffRow"><span style="width:110px;">Map</span>
+        <select id="mpMapSelect">
+          <option value="sandlot">Sandlot Arena</option>
+          <option value="ruins">Ashfall Ruins</option>
+          <option value="skyline">Skyline Towers</option>
+          <option value="dustgulch">Dust Gulch</option>
+        </select>
+      </div>
+      <div class="diffRow"><span style="width:110px;">Duration</span>
+        <select id="mpDurationSelect">
+          <option value="120">2 minutes</option>
+          <option value="180" selected>3 minutes</option>
+          <option value="300">5 minutes</option>
+          <option value="600">10 minutes</option>
+        </select>
+      </div>
+      <button id="mpCreateRoomBtn" class="lobbyBtn" style="margin-top:12px;">CREATE ROOM</button>
+      <div id="mpHostStatus" class="mpStatus"></div>
+    </div>
+
+    <div id="mpJoinPanel" class="panel" style="display:none;">
+      <h2>JOIN</h2>
+      <div class="diffRow">
+        <input type="text" id="mpCodeInput" placeholder="Room code" maxlength="6" style="text-transform:uppercase;">
+        <button id="mpJoinRoomBtn" class="lobbyBtn">JOIN</button>
+      </div>
+      <div id="mpJoinStatus" class="mpStatus"></div>
+    </div>
+
+    <button id="mpStartMatchBtn" class="lobbyBtn" style="display:none; margin-top:14px;">START MATCH</button>
+    <button id="closeMpBtn" class="lobbyBtn secondary" style="margin-top:18px;">BACK TO LOBBY</button>
+  </div>
+</div>
+
 <!-- HUD -->
 <div id="hud">
   <div id="crosshair"></div>
@@ -527,6 +587,10 @@
   </div>
 
   <div id="killfeed"></div>
+  <div id="mpLeaderboard" style="display:none;">
+    <div id="mpTimerText">0:00</div>
+    <div id="mpScoreText">You 0 — 0 Opponent</div>
+  </div>
 
   <div id="minimapWrap"><canvas id="minimap" width="150" height="150"></canvas></div>
 </div>
@@ -664,7 +728,7 @@ function loadSave(){
       const merged = Object.assign({
         coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'],
         equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'],
-        profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0
+        profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null
       }, parsed);
       if(!Array.isArray(merged.equippedWeapons)){
         merged.equippedWeapons = [parsed.equippedWeapon || 'starter', 'starter'];
@@ -672,7 +736,7 @@ function loadSave(){
       return merged;
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0 };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0, username:null };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
@@ -847,6 +911,21 @@ let selectedMap = 'sandlot';
 let scene, camera, renderer, controls, clock;
 let thirdPersonCamera, playerBodyVisual;
 let viewMode = 'first'; // 'first' or 'third'
+
+// ---- multiplayer state (1v1 duel, peer-to-peer via PeerJS) ----
+let mpPeer = null;
+let mpRole = null;        // 'host' | 'client' | null
+let mpConn = null;        // DataConnection to the other player
+let mpActive = false;     // true while an MP match is running
+let mpLocalId = '';
+let mpRemoteName = 'Opponent';
+let mpRemoteEntity = null;
+let mpTimerRemaining = 0;
+let mpTimerTotal = 0;
+let mpMyKills = 0;
+let mpOppKills = 0;
+let mpStateBroadcastTimer = 0;
+let mpRoomCode = '';
 let obstacles = [];       // {minX,maxX,minZ,maxZ}
 let medkits = [];
 let obstacleMeshes = [];
@@ -1431,6 +1510,7 @@ function spawnEntities(){
   projectiles = [];
   tracers = [];
   splats = [];
+  dmgNumbers = [];
   const botNamePool = ['noobmaster67','CrazyPea96','WildCactusBob','Gooddoggo80','WalkInThePark66','Grandma40','AtTheBeach321','DoubleDaring','soggybiscuit11','boxedbysigma','fishyflaps49','fullboxed','clipped14','true alpha67'];
   for(let i=botNamePool.length-1;i>0;i--){
     const j = Math.floor(Math.random()*(i+1));
@@ -1446,7 +1526,7 @@ function spawnEntities(){
     gunKey: save.equippedWeapons[0],
     ammo:{ [save.equippedWeapons[0]]: GUNS[save.equippedWeapons[0]].mag, [save.equippedWeapons[1]]: GUNS[save.equippedWeapons[1]].mag },
     reloading:false, reloadEndAt:0, lastShot:0, semiFired:false,
-    kills:0, name:'YOU',
+    kills:0, name: save.username || 'YOU',
     velocityY:0, grounded:true, eyeHeight:EYE_HEIGHT, airOffset:0,
     sliding:false, slideTimer:0,
     mantling:false, mantleTimer:0, mantleStart:null, mantleEnd:null, mantlePeakY:0,
@@ -1455,7 +1535,7 @@ function spawnEntities(){
   };
   entities.push(player);
 
-  const botCount = selectedPlayerCount - 1;
+  const botCount = mpActive ? 0 : (selectedPlayerCount - 1);
   for(let i=0;i<botCount;i++){
     const sp = randomSpawnPoint(currentMap.radius);
     const botSkin = SKINS[Math.floor(Math.random()*SKINS.length)];
@@ -1481,6 +1561,29 @@ function spawnEntities(){
     meshBundle.body.userData.entityRef = bot;
     meshBundle.head.userData.entityRef = bot;
     entities.push(bot);
+  }
+
+  if(mpActive){
+    const sp = randomSpawnPoint(currentMap.radius);
+    const remoteSkin = SKINS[0];
+    const meshBundle = makeBotMesh(remoteSkin);
+    meshBundle.group.position.set(sp.x,0,sp.z);
+    const nameTag = makeNameSprite(mpRemoteName, 1);
+    nameTag.position.y = 2.4;
+    meshBundle.group.add(nameTag);
+    scene.add(meshBundle.group);
+    const remote = {
+      isPlayer:false, isRemote:true, alive:true, health:100,
+      mesh: meshBundle.group, body: meshBundle.body, head: meshBundle.head, nameTag,
+      limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
+      animPhase:0, name:mpRemoteName, kills:0, lastDamagedBy:null,
+      netTargetX:sp.x, netTargetZ:sp.z, netTargetRotY:0, netMoving:false,
+      peerId:'remote'
+    };
+    meshBundle.body.userData.entityRef = remote;
+    meshBundle.head.userData.entityRef = remote;
+    entities.push(remote);
+    mpRemoteEntity = remote;
   }
 }
 
@@ -1559,6 +1662,7 @@ function playerFire(){
   for(let p=0;p<g.pellets;p++){
     const dir = getSpreadDir(baseDir, spread);
     spawnProjectile(origin, dir, g.dmg, g.range, player, getEquippedGunColor());
+    if(mpActive) mpBroadcastShot(origin, dir, g.dmg, g.range, getEquippedGunColor());
   }
 
   if(player.ammo[player.gunKey] <= 0) startReload();
@@ -1583,6 +1687,7 @@ function spawnProjectile(origin, dir, damage, range, ownerRef, color){
 }
 
 let splats = [];
+let dmgNumbers = [];
 const MAX_SPLATS = 40;
 function makeSplatTexture(colorHex){
   const c = document.createElement('canvas'); c.width=64; c.height=64;
@@ -1626,6 +1731,51 @@ function updateSplats(){
     }
   }
 }
+function spawnDamageNumber(point, amount, isHeadshot){
+  const c = document.createElement('canvas'); c.width=140; c.height=70;
+  const ctx = c.getContext('2d');
+  const text = Math.max(1, Math.round(amount)).toString();
+  ctx.font = "800 40px 'Archivo Black', sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.85)';
+  ctx.strokeText(text, 70, isHeadshot ? 26 : 35);
+  ctx.fillStyle = isHeadshot ? '#ffd54d' : '#ffffff';
+  ctx.fillText(text, 70, isHeadshot ? 26 : 35);
+  if(isHeadshot){
+    ctx.font = "800 15px 'Archivo Black', sans-serif";
+    ctx.lineWidth = 3;
+    ctx.strokeText('HEADSHOT', 70, 54);
+    ctx.fillStyle = '#ff5478';
+    ctx.fillText('HEADSHOT', 70, 54);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.position.copy(point);
+  spr.position.x += (Math.random()-0.5)*0.15;
+  spr.position.y += 0.1;
+  const w = isHeadshot ? 0.62 : 0.46;
+  spr.scale.set(w, w*0.5, 1);
+  scene.add(spr);
+  dmgNumbers.push({sprite:spr, born:performance.now(), startY:spr.position.y});
+}
+function updateDamageNumbers(){
+  const now = performance.now();
+  const dur = 900;
+  for(let i=dmgNumbers.length-1;i>=0;i--){
+    const d = dmgNumbers[i];
+    const age = now - d.born;
+    if(age >= dur){
+      scene.remove(d.sprite);
+      d.sprite.material.map.dispose();
+      d.sprite.material.dispose();
+      dmgNumbers.splice(i,1);
+      continue;
+    }
+    const t = age/dur;
+    d.sprite.position.y = d.startY + t*0.7;
+    d.sprite.material.opacity = 1 - t*t;
+  }
+}
 
 function removeProjectile(i){
   const pr = projectiles[i];
@@ -1648,6 +1798,7 @@ function updateProjectiles(dt){
     const targets = obstacleMeshes.concat(
       entities.filter(e=>!e.isPlayer && e.alive && e!==pr.ownerRef).flatMap(e=>[e.body,e.head])
     );
+    let hitWasHead = false;
     if(targets.length>0){
       const ray = new THREE.Raycaster(pr.pos, dir, 0, moveDist);
       const hits = ray.intersectObjects(targets, false);
@@ -1655,6 +1806,7 @@ function updateProjectiles(dt){
         hitDist = hits[0].distance;
         hitPoint = hits[0].point.clone();
         hitRef = hits[0].object.userData.entityRef || null;
+        hitWasHead = hitRef && hits[0].object === hitRef.head;
       }
     }
 
@@ -1669,18 +1821,23 @@ function updateProjectiles(dt){
         hitDist = closestT;
         hitPoint = closestPoint;
         hitRef = player;
+        hitWasHead = closestPoint.y > playerPos.y - 0.12;
       }
     }
 
     if(hitPoint){
       pr.mesh.position.copy(hitPoint);
-      if(hitRef){
+      if(hitRef && (!mpActive || hitRef===player)){
         const dmgMult = (pr.ownerRef!==player && hitRef!==player) ? BOT_VS_BOT_DMG_MULT : 1;
-        hitRef.health -= pr.damage*dmgMult;
+        const dealt = pr.damage*dmgMult;
+        hitRef.health -= dealt;
         hitRef.lastDamagedBy = pr.ownerRef;
         if(hitRef.isPlayer){ flashDamage(); sfxHurt(); }
-        if(pr.ownerRef===player){ sfxHit(); showHitmarker(); }
+        if(pr.ownerRef===player){ sfxHit(); showHitmarker(); spawnDamageNumber(hitPoint, dealt, hitWasHead); }
         if(hitRef.health<=0 && hitRef.alive) killEntity(hitRef, pr.ownerRef);
+      } else if(hitRef && pr.ownerRef===player){
+        sfxHit(); showHitmarker(); // still give the shooter feedback even though damage isn't authoritative here
+        spawnDamageNumber(hitPoint, pr.damage, hitWasHead);
       }
       spawnImpactFlash(hitPoint, pr.color);
       removeProjectile(i);
@@ -1719,6 +1876,10 @@ function showHitmarker(){
 }
 
 function killEntity(ent, killer){
+  if(mpActive && ent.isPlayer){
+    handleMultiplayerDeath(ent, killer);
+    return;
+  }
   ent.alive = false;
   ent.health = 0;
   if(!ent.isPlayer){
@@ -2202,18 +2363,25 @@ function updateHUD(zoneState){
   clockEl.crosshair.classList.toggle('aiming', player.aiming);
   clockEl.crosshair.style.setProperty('--bloom', (1 + playerBloom*2.2).toFixed(2));
 
-  clockEl.matchTimer.textContent = formatTime(matchElapsed);
-  const aliveBots = entities.filter(e=>!e.isPlayer && e.alive).length;
-  clockEl.playersLeft.textContent = (aliveBots + (player.alive?1:0)) + ' PLAYERS LEFT';
-
-  const distFromCenter = Math.hypot(camera.position.x, camera.position.z);
-  if(distFromCenter > zoneState.radius){
-    clockEl.zoneVignette.classList.add('active');
-    clockEl.zoneMsg.textContent = 'OUTSIDE THE ZONE — TAKING DAMAGE';
-  } else {
+  if(mpActive){
+    clockEl.matchTimer.textContent = '';
+    clockEl.playersLeft.textContent = '';
     clockEl.zoneVignette.classList.remove('active');
-    const nextShrink = zonePhases.find(p=>p.t>matchElapsed && p.r < zoneState.radius-0.01);
-    clockEl.zoneMsg.textContent = nextShrink ? `Zone shrinks in ${Math.ceil(nextShrink.t-matchElapsed)}s` : '';
+    clockEl.zoneMsg.textContent = '';
+  } else {
+    clockEl.matchTimer.textContent = formatTime(matchElapsed);
+    const aliveBots = entities.filter(e=>!e.isPlayer && e.alive).length;
+    clockEl.playersLeft.textContent = (aliveBots + (player.alive?1:0)) + ' PLAYERS LEFT';
+
+    const distFromCenter = Math.hypot(camera.position.x, camera.position.z);
+    if(distFromCenter > zoneState.radius){
+      clockEl.zoneVignette.classList.add('active');
+      clockEl.zoneMsg.textContent = 'OUTSIDE THE ZONE — TAKING DAMAGE';
+    } else {
+      clockEl.zoneVignette.classList.remove('active');
+      const nextShrink = zonePhases.find(p=>p.t>matchElapsed && p.r < zoneState.radius-0.01);
+      clockEl.zoneMsg.textContent = nextShrink ? `Zone shrinks in ${Math.ceil(nextShrink.t-matchElapsed)}s` : '';
+    }
   }
 }
 
@@ -2329,14 +2497,18 @@ function animate(){
       player.ammo[player.gunKey] = GUNS[player.gunKey].mag;
     }
 
-    // zone
-    const zoneState = getZoneState(matchElapsed);
+    // zone (skipped entirely in multiplayer duels - no shrinking zone)
+    let zoneState = {radius: currentMap.radius*999, dmg:0};
+    if(!mpActive){
+      zoneState = getZoneState(matchElapsed);
+      const zr0 = zoneState.radius;
+      zoneMesh.scale.set(zr0, 1, zr0);
+      zoneRingMesh.scale.set(zr0, zr0, 1);
+    }
     const zr = zoneState.radius;
-    zoneMesh.scale.set(zr, 1, zr);
-    zoneRingMesh.scale.set(zr, zr, 1);
 
-    // player zone damage
-    if(player.alive){
+    // player zone damage (single-player only)
+    if(!mpActive && player.alive){
       const d = Math.hypot(camera.position.x, camera.position.z);
       if(d > zr){
         player.health -= zoneState.dmg*dt;
@@ -2344,14 +2516,28 @@ function animate(){
       }
     }
 
-    // bots
+    // bots (AI-driven) / remote player (network-driven)
     for(const e of entities){
       if(e.isPlayer || !e.alive) continue;
+      if(e.isRemote){
+        const lerpT = Math.min(dt*12, 1);
+        e.mesh.position.x += (e.netTargetX - e.mesh.position.x) * lerpT;
+        e.mesh.position.z += (e.netTargetZ - e.mesh.position.z) * lerpT;
+        e.mesh.rotation.y = e.netTargetRotY;
+        e.animPhase += dt * (e.netMoving ? 8 : 2);
+        const swing = Math.sin(e.animPhase) * (e.netMoving ? 0.55 : 0.06);
+        e.limbs.legL.rotation.x = swing; e.limbs.legR.rotation.x = -swing;
+        e.limbs.armL.rotation.x = -swing*0.85; e.limbs.armR.rotation.x = swing*0.85;
+        updateNameSprite(e.nameTag, e.name, Math.max(e.health,0)/100);
+        continue;
+      }
       updateBot(e, dt, zr);
-      const d = Math.hypot(e.mesh.position.x, e.mesh.position.z);
-      if(d > zr){
-        e.health -= zoneState.dmg*dt;
-        if(e.health<=0 && e.alive) killEntity(e, e.lastDamagedBy);
+      if(!mpActive){
+        const d = Math.hypot(e.mesh.position.x, e.mesh.position.z);
+        if(d > zr){
+          e.health -= zoneState.dmg*dt;
+          if(e.health<=0 && e.alive) killEntity(e, e.lastDamagedBy);
+        }
       }
     }
 
@@ -2361,14 +2547,32 @@ function animate(){
     if(viewMode==='third') updateThirdPersonCamera();
     updateTracers();
     updateSplats();
+    updateDamageNumbers();
     updateHUD(zoneState);
-    drawMinimap(zr);
+    if(!mpActive) drawMinimap(zr);
 
-    // win/lose checks
-    const aliveBots = entities.filter(e=>!e.isPlayer && e.alive).length;
-    if(player.alive && aliveBots===0){ endMatch(true, null); }
-    if(matchElapsed >= HARD_TIME_LIMIT && gameState==='playing'){
-      endMatch(player.alive, null);
+    if(mpActive){
+      // broadcast our position ~10x/sec
+      mpStateBroadcastTimer += dt;
+      if(mpStateBroadcastTimer >= 0.1 && mpConn && mpConn.open){
+        mpStateBroadcastTimer = 0;
+        const fdir = new THREE.Vector3(); camera.getWorldDirection(fdir);
+        const rotY = Math.atan2(fdir.x, fdir.z);
+        mpConn.send({type:'state', x:camera.position.x, z:camera.position.z, rotY, moving:isMovingThisFrame});
+      }
+      mpTimerRemaining -= dt;
+      const mpTimerEl = document.getElementById('mpTimerText');
+      if(mpTimerEl) mpTimerEl.textContent = formatTime(Math.max(0,mpTimerRemaining));
+      if(mpTimerRemaining <= 0 && mpActive){
+        mpEndMatchNow();
+      }
+    } else {
+      // win/lose checks (single-player battle royale only)
+      const aliveBots = entities.filter(e=>!e.isPlayer && e.alive).length;
+      if(player.alive && aliveBots===0){ endMatch(true, null); }
+      if(matchElapsed >= HARD_TIME_LIMIT && gameState==='playing'){
+        endMatch(player.alive, null);
+      }
     }
   }
 
@@ -2883,53 +3087,221 @@ document.getElementById('closeDailyBtn').addEventListener('click', ()=>{
 document.getElementById('spinWheelBtn').addEventListener('click', spinDailyWheel);
 
 /* ============================================================
-   SECRET CODE
+   MULTIPLAYER (1v1 duel, peer-to-peer via PeerJS)
    ============================================================ */
-const SECRET_CODE = 'timmylikesx12ertnbghtyu576398';
-const SECRET_REWARD = 10000000000;
-function secretCodeLockRemaining(){
-  return (save.codeLockoutUntil && Date.now() < save.codeLockoutUntil) ? save.codeLockoutUntil - Date.now() : 0;
+function mpGenRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for(let i=0;i<5;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
 }
-function updateSecretCodeUI(){
-  const remaining = secretCodeLockRemaining();
-  const btn = document.getElementById('secretCodeBtn');
-  const input = document.getElementById('secretCodeInput');
-  const msg = document.getElementById('secretCodeMsg');
-  if(remaining > 0){
-    btn.disabled = true; input.disabled = true;
-    const mins = Math.ceil(remaining/60000);
-    msg.textContent = 'Locked out — try again in '+mins+' min';
-    msg.style.color = '#ff6b6b';
-  } else {
-    btn.disabled = false; input.disabled = false;
-  }
+function mpSetStatus(panelId, text, isError){
+  const el = document.getElementById(panelId);
+  el.innerHTML = text;
+  el.style.color = isError ? '#ff6b6b' : '#c8c8d8';
 }
-function trySecretCode(){
-  if(secretCodeLockRemaining() > 0){ updateSecretCodeUI(); return; }
-  const input = document.getElementById('secretCodeInput');
-  const msg = document.getElementById('secretCodeMsg');
-  const val = input.value.trim();
-  if(val === SECRET_CODE){
-    save.coins += SECRET_REWARD;
-    save.codeLockoutUntil = 0;
-    saveGame();
-    updateCoinDisplays();
-    msg.textContent = 'Code accepted! +'+SECRET_REWARD.toLocaleString()+' coins';
-    msg.style.color = 'var(--lime)';
-    input.value = '';
-  } else {
-    save.codeLockoutUntil = Date.now() + 60*60*1000;
-    saveGame();
-    msg.textContent = 'Incorrect code. Locked out for 1 hour.';
-    msg.style.color = '#ff6b6b';
-    updateSecretCodeUI();
-  }
-}
-document.getElementById('secretCodeBtn').addEventListener('click', trySecretCode);
-document.getElementById('secretCodeInput').addEventListener('keydown', e=>{
-  if(e.code==='Enter') trySecretCode();
+document.getElementById('openMpBtn').addEventListener('click', ()=>{
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('mpScreen').style.display = 'block';
 });
-updateSecretCodeUI();
+document.getElementById('closeMpBtn').addEventListener('click', ()=>{
+  document.getElementById('mpScreen').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+});
+document.getElementById('mpShowHostBtn').addEventListener('click', ()=>{
+  document.getElementById('mpHostPanel').style.display = 'block';
+  document.getElementById('mpJoinPanel').style.display = 'none';
+});
+document.getElementById('mpShowJoinBtn').addEventListener('click', ()=>{
+  document.getElementById('mpJoinPanel').style.display = 'block';
+  document.getElementById('mpHostPanel').style.display = 'none';
+});
+
+function mpTeardown(){
+  try{ if(mpConn) mpConn.close(); }catch(e){}
+  try{ if(mpPeer) mpPeer.destroy(); }catch(e){}
+  mpPeer = null; mpConn = null; mpRole = null; mpActive = false;
+}
+
+document.getElementById('mpCreateRoomBtn').addEventListener('click', ()=>{
+  mpTeardown();
+  const code = mpGenRoomCode();
+  mpRoomCode = code;
+  mpSetStatus('mpHostStatus', 'Connecting to relay…');
+  mpPeer = new Peer('splatzone-'+code);
+  mpPeer.on('open', id=>{
+    mpLocalId = id;
+    mpRole = 'host';
+    mpSetStatus('mpHostStatus', 'Room code:<div id="roomCodeBig">'+code+'</div>Share this with your friend. Waiting for them to join…');
+  });
+  mpPeer.on('connection', conn=>{
+    mpConn = conn;
+    mpSetupConnection();
+    conn.on('open', ()=>{
+      conn.send({type:'hello', name: save.username||'Player'});
+    });
+  });
+  mpPeer.on('error', err=>{
+    mpSetStatus('mpHostStatus', 'Connection error: '+(err && err.type ? err.type : 'unknown')+'. Try again.', true);
+  });
+});
+
+document.getElementById('mpJoinRoomBtn').addEventListener('click', ()=>{
+  mpTeardown();
+  const code = document.getElementById('mpCodeInput').value.trim().toUpperCase();
+  if(!code){ mpSetStatus('mpJoinStatus', 'Enter a room code first.', true); return; }
+  mpSetStatus('mpJoinStatus', 'Connecting…');
+  mpPeer = new Peer();
+  mpPeer.on('open', id=>{
+    mpLocalId = id;
+    mpRole = 'client';
+    mpConn = mpPeer.connect('splatzone-'+code, {reliable:true});
+    mpSetupConnection();
+    mpConn.on('open', ()=>{
+      mpSetStatus('mpJoinStatus', 'Connected! Waiting for the host to start the match…');
+      mpConn.send({type:'hello', name: save.username||'Player'});
+    });
+  });
+  mpPeer.on('error', err=>{
+    mpSetStatus('mpJoinStatus', 'Could not connect: '+(err && err.type ? err.type : 'unknown')+'. Check the code and try again.', true);
+  });
+});
+
+function mpSetupConnection(){
+  mpConn.on('data', msg=> mpHandleMessage(msg));
+  mpConn.on('close', ()=>{
+    if(mpActive){
+      addKillFeed('Opponent disconnected.');
+    }
+    mpActive = false;
+  });
+  mpConn.on('error', ()=>{
+    if(mpRole==='host') mpSetStatus('mpHostStatus', 'Connection lost.', true);
+    else mpSetStatus('mpJoinStatus', 'Connection lost.', true);
+  });
+}
+
+function mpHandleMessage(msg){
+  if(!msg || !msg.type) return;
+  switch(msg.type){
+    case 'hello':
+      mpRemoteName = msg.name || 'Opponent';
+      if(mpRole==='host'){
+        mpSetStatus('mpHostStatus', 'Room code:<div id="roomCodeBig">'+mpRoomCode+'</div><b>'+mpRemoteName+' connected!</b>');
+        document.getElementById('mpStartMatchBtn').style.display = 'inline-block';
+      }
+      break;
+    case 'start':
+      mpBeginMatch(msg.map, msg.duration, false);
+      break;
+    case 'shot':
+      mpReceiveShot(msg);
+      break;
+    case 'state':
+      if(mpRemoteEntity){
+        mpRemoteEntity.netTargetX = msg.x;
+        mpRemoteEntity.netTargetZ = msg.z;
+        mpRemoteEntity.netTargetRotY = msg.rotY;
+        mpRemoteEntity.netMoving = msg.moving;
+      }
+      break;
+    case 'death':
+      // in a strict 1v1 duel, "opponent reports they died" always means I get the kill
+      mpMyKills++;
+      addKillFeed('You eliminated '+mpRemoteName);
+      mpUpdateScoreHud();
+      if(mpRemoteEntity && mpRemoteEntity.mesh){
+        mpRemoteEntity.mesh.visible = false;
+        setTimeout(()=>{ if(mpRemoteEntity && mpRemoteEntity.mesh) mpRemoteEntity.mesh.visible = true; }, 2800);
+      }
+      break;
+    case 'end':
+      mpShowResults(msg.myKillsAsSeenByThem, msg.oppKillsAsSeenByThem);
+      break;
+  }
+}
+
+document.getElementById('mpStartMatchBtn').addEventListener('click', ()=>{
+  if(mpRole!=='host' || !mpConn || !mpConn.open) return;
+  const map = document.getElementById('mpMapSelect').value;
+  const duration = parseInt(document.getElementById('mpDurationSelect').value, 10);
+  mpConn.send({type:'start', map, duration});
+  mpBeginMatch(map, duration, true);
+});
+
+function mpBeginMatch(mapKey, duration, isHostStarting){
+  document.getElementById('mpScreen').style.display = 'none';
+  mpActive = true;
+  mpMyKills = 0;
+  mpOppKills = 0;
+  mpTimerTotal = duration;
+  mpTimerRemaining = duration;
+  selectedDifficulty = 2;
+  startMatch(mapKey);
+  if(zoneMesh) zoneMesh.visible = false;
+  if(zoneRingMesh) zoneRingMesh.visible = false;
+  document.getElementById('mpLeaderboard').style.display = 'block';
+  mpUpdateScoreHud();
+}
+
+function mpUpdateScoreHud(){
+  const el = document.getElementById('mpScoreText');
+  if(el) el.textContent = 'You '+mpMyKills+' — '+mpOppKills+' '+mpRemoteName;
+}
+
+function mpReceiveShot(msg){
+  if(!mpRemoteEntity || !scene) return;
+  const origin = new THREE.Vector3(msg.ox, msg.oy, msg.oz);
+  const dir = new THREE.Vector3(msg.dx, msg.dy, msg.dz);
+  spawnProjectile(origin, dir, msg.dmg, msg.range, mpRemoteEntity, msg.color);
+}
+
+function mpBroadcastShot(origin, dir, dmg, range, color){
+  if(!mpActive || !mpConn || !mpConn.open) return;
+  mpConn.send({type:'shot', ox:origin.x, oy:origin.y, oz:origin.z, dx:dir.x, dy:dir.y, dz:dir.z, dmg, range, color});
+}
+
+function handleMultiplayerDeath(ent, killer){
+  ent.alive = false;
+  ent.health = 0;
+  addKillFeed('You were eliminated by '+(killer ? killer.name : mpRemoteName));
+  sfxDeath();
+  if(mpConn && mpConn.open) mpConn.send({type:'death'});
+  mpOppKills++;
+  mpUpdateScoreHud();
+  setTimeout(mpRespawnLocalPlayer, 3000);
+}
+function mpRespawnLocalPlayer(){
+  if(!mpActive || !player) return;
+  const sp = randomSpawnPoint(currentMap.radius);
+  camera.position.set(sp.x, EYE_HEIGHT, sp.z);
+  player.health = 100;
+  player.alive = true;
+  player.velocityY = 0; player.airOffset = 0; player.eyeHeight = EYE_HEIGHT;
+  Object.keys(player.ammo).forEach(k=>{ player.ammo[k] = GUNS[k].mag; });
+  player.reloading = false;
+}
+function mpEndMatchNow(){
+  mpActive = false;
+  if(document.pointerLockElement) document.exitPointerLock();
+  if(mpConn && mpConn.open) mpConn.send({type:'end', myKillsAsSeenByThem:mpOppKills, oppKillsAsSeenByThem:mpMyKills});
+  mpShowResults(mpMyKills, mpOppKills);
+}
+function mpShowResults(myKills, oppKills){
+  clockEl.hud.style.display = 'none';
+  clockEl.blocker.style.display = 'none';
+  document.getElementById('mpLeaderboard').style.display = 'none';
+  clockEl.endScreen.style.display = 'flex';
+  const title = document.getElementById('endTitle');
+  const sub = document.getElementById('endSub');
+  if(myKills > oppKills){ title.textContent = 'VICTORY'; title.className = 'win'; sub.textContent = 'You won '+myKills+' — '+oppKills+' against '+mpRemoteName+'.'; }
+  else if(myKills < oppKills){ title.textContent = 'DEFEAT'; title.className = 'lose'; sub.textContent = mpRemoteName+' won '+oppKills+' — '+myKills+'.'; }
+  else { title.textContent = 'DRAW'; title.className = 'win'; sub.textContent = 'Tied '+myKills+' — '+myKills+' with '+mpRemoteName+'.'; }
+  document.getElementById('statTime').textContent = formatTime(mpTimerTotal);
+  document.getElementById('statKills').textContent = myKills;
+  document.getElementById('statPlace').textContent = myKills>=oppKills ? '#1' : '#2';
+  document.getElementById('statCoins').textContent = '+0';
+}
 
 /* ============================================================
    GOOGLE SIGN-IN
@@ -2983,6 +3355,17 @@ document.getElementById('googleSignInBtn').addEventListener('click', ()=>{
 updateEquippedLabels();
 updateCoinDisplays();
 renderProfile();
+if(!save.username) save.username = 'Player'+Math.floor(1000+Math.random()*9000);
+document.getElementById('usernameInput').value = save.username;
+document.getElementById('usernameSaveBtn').addEventListener('click', ()=>{
+  const val = document.getElementById('usernameInput').value.trim().slice(0,18);
+  save.username = val || save.username;
+  document.getElementById('usernameInput').value = save.username;
+  saveGame();
+});
+document.getElementById('usernameInput').addEventListener('keydown', e=>{
+  if(e.code==='Enter') document.getElementById('usernameSaveBtn').click();
+});
 function updateDailyButtonBadge(){
   const btn = document.getElementById('openDailyBtn');
   if(!btn) return;
