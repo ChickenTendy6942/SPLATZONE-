@@ -146,6 +146,7 @@
   #ammoBig{font-size:34px; color:#fff; line-height:1;}
   #ammoSmall{font-size:14px; color:#9a9ab0;}
   #weaponName{font-size:13px; letter-spacing:1px; color:var(--cyan); margin-bottom:2px; font-weight:800;}
+  #otherWeaponHint{font-size:10.5px; color:#9a9ab0; margin-bottom:2px;}
   #reloadTag{color:var(--pink); font-weight:800; font-size:13px; margin-top:4px; display:none;}
 
   #timerBox{text-align:center; font-family:'Archivo Black';}
@@ -252,6 +253,25 @@
     border-top:20px solid #fff; z-index:2; filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));
   }
   .wheelResult{font-family:'Archivo Black'; font-size:20px; color:var(--lime); min-height:28px; margin-top:6px;}
+
+  #secretCodeBox{
+    position:fixed; top:14px; left:14px; z-index:5;
+    background:rgba(15,15,22,.85); border:1px solid var(--line); border-radius:8px;
+    padding:8px; display:flex; gap:6px; align-items:center;
+  }
+  #secretCodeInput{
+    background:#1a1a24; border:1px solid var(--line); color:#fff; border-radius:5px;
+    padding:7px 8px; font-size:11px; width:130px;
+  }
+  #secretCodeBtn{
+    background:var(--cyan); border:none; color:#0c0c12; font-family:'Archivo Black';
+    font-size:10.5px; padding:8px 10px; border-radius:5px; cursor:pointer; white-space:nowrap;
+  }
+  #secretCodeBtn:disabled, #secretCodeInput:disabled{opacity:.4; cursor:not-allowed;}
+  #secretCodeMsg{
+    position:absolute; top:100%; left:0; margin-top:6px; font-size:11px; white-space:nowrap;
+    background:rgba(15,15,22,.92); padding:5px 8px; border-radius:5px;
+  }
   .shopPreviewStage{
     width:260px; height:260px; margin:0 auto 6px; border-radius:12px; overflow:hidden; position:relative;
     background:radial-gradient(circle at 50% 30%, #2a2a3e, #0f0f16); border:1px solid var(--line);
@@ -310,6 +330,11 @@
 
 <!-- MENU -->
 <div id="menu">
+  <div id="secretCodeBox">
+    <input type="text" id="secretCodeInput" placeholder="Secret code...">
+    <button id="secretCodeBtn">REDEEM</button>
+    <div id="secretCodeMsg"></div>
+  </div>
   <div class="menuWrap">
     <div class="titleBlock">
       <h1>SPLATZONE</h1>
@@ -428,7 +453,11 @@
     <p class="hint">Click any item below to preview it here. Buying/equipping is separate.</p>
     <h2 class="shopSectionTitle">CHARACTER SKINS</h2>
     <div id="skinShopList" class="shopGrid"></div>
-    <h2 class="shopSectionTitle">WEAPONS</h2>
+    <h2 class="shopSectionTitle">WEAPONS — carry 2 at once, switch with Q in a match</h2>
+    <div class="startRow" style="gap:10px; margin-bottom:12px;">
+      <button id="slotPrimaryBtn" class="lobbyBtn">PRIMARY: <span id="slotPrimaryName"></span></button>
+      <button id="slotSecondaryBtn" class="lobbyBtn secondary">SECONDARY: <span id="slotSecondaryName"></span></button>
+    </div>
     <div id="weaponShopList" class="shopGrid"></div>
     <h2 class="shopSectionTitle">GUN RIGS</h2>
     <div id="gunShopList" class="shopGrid"></div>
@@ -441,13 +470,13 @@
     <div class="shopHeader">
       <h1 class="display">SETTINGS</h1>
     </div>
+    <p class="hint" style="font-size:14px; color:var(--cyan); margin-bottom:14px;">🎯 Aim Down Sights is rebindable below like everything else — click its button and either press a key or click a mouse button.</p>
     <h2 class="shopSectionTitle">KEYBINDS — click a key, then press the new one</h2>
     <div id="keybindList" class="keybindList"></div>
     <div class="startRow" style="margin-top:24px; gap:14px;">
       <button id="resetKeybindsBtn" class="lobbyBtn secondary">RESET TO DEFAULT</button>
       <button id="closeSettingsBtn" class="lobbyBtn">BACK TO LOBBY</button>
     </div>
-    <p class="hint">Aim Down Sights is fixed to Right Mouse Button.</p>
   </div>
 </div>
 
@@ -486,6 +515,7 @@
 
   <div class="topRight" id="ammoBox">
     <div id="weaponName">SIDEARM</div>
+    <div id="otherWeaponHint"></div>
     <div id="ammoBig">10<span id="ammoSmall"> / 10</span></div>
     <div id="reloadTag">RELOADING…</div>
   </div>
@@ -585,9 +615,10 @@ const GUNS = {
   starter: { key:'starter', name:'Starter Blaster', color:0x2c2f36, dmg:13, mag:26, fireRate:150, reload:1500, range:40, spread:0.032, pellets:1, auto:true,  cost:0,     rarity:'Common' },
   smg:     { key:'smg',     name:'Rapidfire SMG',   color:0x274a8a, dmg:9,  mag:34, fireRate:85,  reload:1500, range:32, spread:0.055, pellets:1, auto:true,  cost:5000,  rarity:'Rare' },
   shotgun: { key:'shotgun', name:'Power Shotgun',   color:0x8a5a1f, dmg:10, mag:6,  fireRate:700, reload:1800, range:15, spread:0.15,  pellets:7, auto:false, cost:12000, rarity:'Epic' },
-  sniper:  { key:'sniper',  name:'Deadeye Sniper',  color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:70, spread:0.006, pellets:1, auto:false, cost:30000, rarity:'Legendary' }
+  sniper:  { key:'sniper',  name:'Deadeye Sniper',  color:0x1a3a2a, dmg:75, mag:5,  fireRate:900, reload:1900, range:70, spread:0.006, pellets:1, auto:false, cost:30000, rarity:'Legendary' },
+  minigun: { key:'minigun', name:'Apex Minigun',    color:0xffd54d, dmg:12, mag:150,fireRate:45,  reload:2800, range:42, spread:0.05,  pellets:1, auto:true,  cost:1000000000, rarity:'Mythic' }
 };
-const WEAPON_KEYS = ['starter','smg','shotgun','sniper'];
+const WEAPON_KEYS = ['starter','smg','shotgun','sniper','minigun'];
 
 const DIFFICULTY_SETTINGS = [
   { name:'EASY',   desc:'Bots react slowly and miss a lot. Lower coin payout.',                    aggro:20, hitMult:0.55, fireRateMult:1.55, dmgMult:0.8,  coinMult:0.5 },
@@ -630,19 +661,24 @@ function loadSave(){
     const raw = localStorage.getItem(SAVE_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      return Object.assign({
+      const merged = Object.assign({
         coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'],
-        equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter',
-        profileName:null, profilePic:null, lastDailyClaim:null
+        equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'],
+        profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0
       }, parsed);
+      if(!Array.isArray(merged.equippedWeapons)){
+        merged.equippedWeapons = [parsed.equippedWeapon || 'starter', 'starter'];
+      }
+      return merged;
     }
   }catch(e){}
-  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapon:'starter', profileName:null, profilePic:null, lastDailyClaim:null };
+  return { coins:0, ownedSkins:['rookie'], ownedGuns:['stock'], ownedWeapons:['starter'], equippedSkin:'rookie', equippedGun:'stock', equippedWeapons:['starter','starter'], profileName:null, profilePic:null, lastDailyClaim:null, codeLockoutUntil:0 };
 }
 function saveGame(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
 }
 let save = loadSave();
+let activeLoadoutSlot = 0; // which shop weapon slot (0=primary,1=secondary) Equip clicks target
 function getEquippedSkinDef(){
   return SKINS.find(x=>x.id===save.equippedSkin) || SKINS[0];
 }
@@ -654,11 +690,11 @@ function getEquippedGunColor(){
 const KEYBIND_KEY = 'splatzone_keybinds_v1';
 const DEFAULT_KEYBINDS = {
   forward:'KeyW', back:'KeyS', left:'KeyA', right:'KeyD',
-  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR', toggleView:'KeyV'
+  jump:'Space', crouch:'ControlLeft', slide:'KeyC', sprint:'ShiftLeft', reload:'KeyR', toggleView:'KeyV', switchWeapon:'KeyQ', aim:'MOUSE2'
 };
 const KEYBIND_LABELS = {
   forward:'Move Forward', back:'Move Back', left:'Move Left', right:'Move Right',
-  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload', toggleView:'Toggle 1st/3rd Person'
+  jump:'Jump / Mantle', crouch:'Crouch', slide:'Slide', sprint:'Tactical Sprint', reload:'Reload', toggleView:'Toggle 1st/3rd Person', switchWeapon:'Switch Weapon', aim:'Aim Down Sights'
 };
 function loadKeybinds(){
   try{
@@ -671,6 +707,10 @@ function saveKeybinds(){ try{ localStorage.setItem(KEYBIND_KEY, JSON.stringify(K
 let KEYBINDS = loadKeybinds();
 function keyLabel(code){
   if(!code) return '—';
+  if(code==='MOUSE0') return 'Left Click';
+  if(code==='MOUSE1') return 'Middle Click';
+  if(code==='MOUSE2') return 'Right Click';
+  if(code.startsWith('MOUSE')) return 'Mouse '+code.slice(5);
   if(code.startsWith('Key')) return code.slice(3);
   if(code.startsWith('Digit')) return code.slice(5);
   if(code==='Space') return 'Space';
@@ -830,6 +870,7 @@ const clockEl = {
   ammoBig: document.getElementById('ammoBig'),
   ammoSmall: document.getElementById('ammoSmall'),
   weaponName: document.getElementById('weaponName'),
+  otherWeaponHint: document.getElementById('otherWeaponHint'),
   reloadTag: document.getElementById('reloadTag'),
   matchTimer: document.getElementById('matchTimer'),
   zoneMsg: document.getElementById('zoneMsg'),
@@ -1400,8 +1441,10 @@ function spawnEntities(){
 
   player = {
     isPlayer:true, alive:true, health:100,
-    gunKey:save.equippedWeapon,
-    ammo:{[save.equippedWeapon]: GUNS[save.equippedWeapon].mag},
+    guns: [save.equippedWeapons[0], save.equippedWeapons[1]],
+    gunIndex: 0,
+    gunKey: save.equippedWeapons[0],
+    ammo:{ [save.equippedWeapons[0]]: GUNS[save.equippedWeapons[0]].mag, [save.equippedWeapons[1]]: GUNS[save.equippedWeapons[1]].mag },
     reloading:false, reloadEndAt:0, lastShot:0, semiFired:false,
     kills:0, name:'YOU',
     velocityY:0, grounded:true, eyeHeight:EYE_HEIGHT, airOffset:0,
@@ -1661,6 +1704,14 @@ function startReload(){
   player.reloading = true;
   player.reloadEndAt = performance.now() + g.reload;
 }
+function switchPlayerGun(){
+  if(!player.guns || player.guns[0]===player.guns[1]) return; // nothing to switch to
+  player.gunIndex = 1 - player.gunIndex;
+  player.gunKey = player.guns[player.gunIndex];
+  player.reloading = false;
+  if(player.ammo[player.gunKey] === undefined) player.ammo[player.gunKey] = GUNS[player.gunKey].mag;
+  if(gunMesh) updateGunViewmodel();
+}
 
 function showHitmarker(){
   clockEl.hitmarker.classList.add('show');
@@ -1873,16 +1924,21 @@ window.addEventListener('keydown', e=>{
     if(e.code===KEYBINDS.jump) handleJumpOrMantle();
     if(e.code===KEYBINDS.slide) handleSlide();
     if(e.code===KEYBINDS.toggleView) viewMode = (viewMode==='first') ? 'third' : 'first';
+    if(e.code===KEYBINDS.switchWeapon) switchPlayerGun();
+    if(e.code===KEYBINDS.aim && !KEYBINDS.aim.startsWith('MOUSE')) player.aiming = true;
   }
 });
-window.addEventListener('keyup', e=>{ keys[e.code]=false; });
+window.addEventListener('keyup', e=>{
+  keys[e.code]=false;
+  if(e.code===KEYBINDS.aim && !KEYBINDS.aim.startsWith('MOUSE') && player) player.aiming = false;
+});
 document.addEventListener('contextmenu', e=>{
   if(gameState==='playing' || gameState==='countdown') e.preventDefault();
 });
 document.addEventListener('mousedown', e=>{
-  if(e.button===2){
+  if('MOUSE'+e.button === KEYBINDS.aim){
     if(gameState==='playing' && document.pointerLockElement) player.aiming = true;
-    return;
+    if(e.button!==0) return;
   }
   if(e.button!==0) return;
   isMouseDown = true;
@@ -1893,7 +1949,10 @@ document.addEventListener('mousedown', e=>{
   }
 });
 window.addEventListener('mouseup', e=>{
-  if(e.button===2){ if(player) player.aiming = false; return; }
+  if('MOUSE'+e.button === KEYBINDS.aim){
+    if(player) player.aiming = false;
+    if(e.button!==0) return;
+  }
   if(e.button!==0) return;
   isMouseDown = false;
   if(player) player.semiFired = false;
@@ -2127,6 +2186,12 @@ function updateHUD(zoneState){
 
   const g = GUNS[player.gunKey];
   clockEl.weaponName.textContent = g.name;
+  if(player.guns && player.guns[0]!==player.guns[1]){
+    const otherKey = player.guns[1-player.gunIndex];
+    clockEl.otherWeaponHint.textContent = '[Q] '+GUNS[otherKey].name;
+  } else {
+    clockEl.otherWeaponHint.textContent = '';
+  }
   clockEl.ammoBig.firstChild.textContent = player.ammo[player.gunKey];
   clockEl.ammoSmall.textContent = ' / '+g.mag;
   clockEl.reloadTag.style.display = player.reloading ? 'block' : 'none';
@@ -2393,6 +2458,38 @@ function showSkinPreview(skinDef){
   document.getElementById('shopPreviewLabel').textContent = skinDef.name;
 }
 function buildPaintballGunModel(colorHex, shapeKey){
+  if(shapeKey==='minigun'){
+    const group = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({color:colorHex});
+    const darkMat = new THREE.MeshLambertMaterial({color:0x1c1c24});
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.13,0.14,0.3), darkMat);
+    group.add(body);
+    const barrelCluster = new THREE.Group();
+    for(let i=0;i<6;i++){
+      const a = (i/6)*Math.PI*2;
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.5,6), mat);
+      bar.rotation.x = Math.PI/2;
+      bar.position.set(Math.cos(a)*0.055, Math.sin(a)*0.055, -0.4);
+      barrelCluster.add(bar);
+    }
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.1,10), darkMat);
+    hub.rotation.x = Math.PI/2;
+    hub.position.set(0,0,-0.18);
+    barrelCluster.add(hub);
+    group.add(barrelCluster);
+    const hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,0.14,10), darkMat);
+    hopper.position.set(0,0.13,0.02);
+    group.add(hopper);
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.16,10), mat);
+    drum.rotation.x = Math.PI/2;
+    drum.position.set(0,-0.02,0.2);
+    group.add(drum);
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.16,0.07), darkMat);
+    grip.position.set(0,-0.13,0.08);
+    grip.rotation.x = 0.28;
+    group.add(grip);
+    return group;
+  }
   const group = new THREE.Group();
   const mat = new THREE.MeshLambertMaterial({color:colorHex});
   const darkMat = new THREE.MeshLambertMaterial({color:0x1c1c24});
@@ -2494,11 +2591,12 @@ function updateEquippedLabels(){
   document.getElementById('equippedSkinName').textContent = skin.name;
   document.getElementById('equippedGunName').textContent = gun.name;
 
-  const weapon = GUNS[save.equippedWeapon] || GUNS.starter;
+  const w1 = GUNS[save.equippedWeapons[0]] || GUNS.starter;
+  const w2 = GUNS[save.equippedWeapons[1]] || GUNS.starter;
   const nameEl = document.getElementById('menuEquippedWeaponName');
   const statsEl = document.getElementById('menuEquippedWeaponStats');
-  if(nameEl) nameEl.textContent = weapon.name;
-  if(statsEl) statsEl.textContent = (weapon.auto?'Fully automatic':'Semi-automatic')+' · Dmg '+weapon.dmg+' · Mag '+weapon.mag+' · '+weapon.rarity;
+  if(nameEl) nameEl.textContent = w1.name + (w2.key!==w1.key ? ' + '+w2.name : '');
+  if(statsEl) statsEl.textContent = 'Primary: Dmg '+w1.dmg+' · Mag '+w1.mag+' · '+w1.rarity + (w2.key!==w1.key ? '  |  Secondary: Dmg '+w2.dmg+' · Mag '+w2.mag+' · '+w2.rarity : '');
 }
 
 /* ============================================================
@@ -2537,22 +2635,29 @@ function renderShop(){
 
   const weaponList = document.getElementById('weaponShopList');
   weaponList.innerHTML = '';
+  document.getElementById('slotPrimaryName').textContent = GUNS[save.equippedWeapons[0]].name;
+  document.getElementById('slotSecondaryName').textContent = GUNS[save.equippedWeapons[1]].name;
+  document.getElementById('slotPrimaryBtn').classList.toggle('secondary', activeLoadoutSlot!==0);
+  document.getElementById('slotSecondaryBtn').classList.toggle('secondary', activeLoadoutSlot!==1);
   WEAPON_KEYS.forEach(key=>{
     const w = GUNS[key];
     const owned = save.ownedWeapons.includes(key);
-    const equipped = save.equippedWeapon===key;
+    const inActiveSlot = save.equippedWeapons[activeLoadoutSlot]===key;
+    const inOtherSlot = save.equippedWeapons[1-activeLoadoutSlot]===key;
     const item = document.createElement('div');
-    item.className = 'shopItem'+(owned?' owned':'')+(equipped?' equipped':'');
-    item.style.borderColor = equipped ? '' : (RARITY_COLORS[w.rarity]||'#2a2a38');
+    item.className = 'shopItem'+(owned?' owned':'')+(inActiveSlot?' equipped':'');
+    item.style.borderColor = inActiveSlot ? '' : (RARITY_COLORS[w.rarity]||'#2a2a38');
+    const slotNote = inOtherSlot ? '<div class="cost" style="color:var(--cyan);">in other slot</div>' : '';
     item.innerHTML =
       '<div class="rarityTag" style="color:'+RARITY_COLORS[w.rarity]+';">'+w.rarity+'</div>'+
       '<div class="shopSwatch" style="background:'+hexColor(w.color)+'"></div>'+
       '<b>'+w.name+'</b>'+
       '<div class="cost" style="text-transform:none;color:#9a9ab0;">Dmg '+w.dmg+' · Mag '+w.mag+'</div>'+
       '<div class="cost">'+(w.cost===0?'FREE':'🪙 '+w.cost.toLocaleString())+'</div>'+
-      '<button data-type="weapon" data-id="'+key+'">'+(equipped?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
+      slotNote+
+      '<button data-type="weapon" data-id="'+key+'">'+(inActiveSlot?'EQUIPPED':(owned?'EQUIP':'BUY'))+'</button>';
     const btn = item.querySelector('button');
-    if(equipped) btn.classList.add('equippedBtn');
+    if(inActiveSlot) btn.classList.add('equippedBtn');
     if(!owned && save.coins<w.cost) btn.disabled = true;
     item.addEventListener('click', ()=>{
       showGunPreview(key, getEquippedGunColor(), w.name);
@@ -2578,7 +2683,7 @@ function renderShop(){
     if(equipped) btn.classList.add('equippedBtn');
     if(!owned && save.coins<g.cost) btn.disabled = true;
     item.addEventListener('click', ()=>{
-      showGunPreview(save.equippedWeapon, g.color, g.name);
+      showGunPreview(save.equippedWeapons[0], g.color, g.name);
       gunList.querySelectorAll('.shopItem').forEach(el=>el.classList.remove('previewing'));
       item.classList.add('previewing');
     });
@@ -2598,8 +2703,8 @@ function handleShopClick(e){
   } else if(type==='weapon'){
     const w = GUNS[id];
     if(!w) return;
-    if(save.ownedWeapons.includes(id)) save.equippedWeapon = id;
-    else if(save.coins>=w.cost){ save.coins -= w.cost; save.ownedWeapons.push(id); save.equippedWeapon = id; }
+    if(save.ownedWeapons.includes(id)) save.equippedWeapons[activeLoadoutSlot] = id;
+    else if(save.coins>=w.cost){ save.coins -= w.cost; save.ownedWeapons.push(id); save.equippedWeapons[activeLoadoutSlot] = id; }
   } else {
     const g = GUN_SKINS.find(x=>x.id===id);
     if(!g) return;
@@ -2614,6 +2719,8 @@ function handleShopClick(e){
 document.getElementById('skinShopList').addEventListener('click', handleShopClick);
 document.getElementById('weaponShopList').addEventListener('click', handleShopClick);
 document.getElementById('gunShopList').addEventListener('click', handleShopClick);
+document.getElementById('slotPrimaryBtn').addEventListener('click', ()=>{ activeLoadoutSlot = 0; renderShop(); });
+document.getElementById('slotSecondaryBtn').addEventListener('click', ()=>{ activeLoadoutSlot = 1; renderShop(); });
 document.getElementById('openShopBtn').addEventListener('click', ()=>{
   document.getElementById('menu').style.display = 'none';
   document.getElementById('shopScreen').style.display = 'block';
@@ -2649,23 +2756,40 @@ function startRebind(btn){
     b.textContent = keyLabel(KEYBINDS[b.dataset.action]);
   });
   btn.classList.add('listening');
-  btn.textContent = 'PRESS A KEY…';
+  btn.textContent = 'PRESS A KEY OR CLICK…';
   const action = btn.dataset.action;
-  function capture(e){
+  function cleanup(){
+    window.removeEventListener('keydown', captureKey, true);
+    window.removeEventListener('mousedown', captureMouse, true);
+    window.removeEventListener('contextmenu', blockMenu, true);
+  }
+  function blockMenu(e){ e.preventDefault(); }
+  function captureKey(e){
     e.preventDefault();
     if(e.code==='Escape'){
       btn.classList.remove('listening');
       btn.textContent = keyLabel(KEYBINDS[action]);
-      window.removeEventListener('keydown', capture, true);
+      cleanup();
       return;
     }
     KEYBINDS[action] = e.code;
     saveKeybinds();
     btn.classList.remove('listening');
     btn.textContent = keyLabel(e.code);
-    window.removeEventListener('keydown', capture, true);
+    cleanup();
   }
-  window.addEventListener('keydown', capture, true);
+  function captureMouse(e){
+    e.preventDefault();
+    const code = 'MOUSE'+e.button;
+    KEYBINDS[action] = code;
+    saveKeybinds();
+    btn.classList.remove('listening');
+    btn.textContent = keyLabel(code);
+    cleanup();
+  }
+  window.addEventListener('keydown', captureKey, true);
+  window.addEventListener('mousedown', captureMouse, true);
+  window.addEventListener('contextmenu', blockMenu, true);
 }
 document.getElementById('openSettingsBtn').addEventListener('click', ()=>{
   document.getElementById('menu').style.display = 'none';
@@ -2757,6 +2881,55 @@ document.getElementById('closeDailyBtn').addEventListener('click', ()=>{
   document.getElementById('menu').style.display = 'flex';
 });
 document.getElementById('spinWheelBtn').addEventListener('click', spinDailyWheel);
+
+/* ============================================================
+   SECRET CODE
+   ============================================================ */
+const SECRET_CODE = 'timmylikesx12ertnbghtyu576398';
+const SECRET_REWARD = 10000000000;
+function secretCodeLockRemaining(){
+  return (save.codeLockoutUntil && Date.now() < save.codeLockoutUntil) ? save.codeLockoutUntil - Date.now() : 0;
+}
+function updateSecretCodeUI(){
+  const remaining = secretCodeLockRemaining();
+  const btn = document.getElementById('secretCodeBtn');
+  const input = document.getElementById('secretCodeInput');
+  const msg = document.getElementById('secretCodeMsg');
+  if(remaining > 0){
+    btn.disabled = true; input.disabled = true;
+    const mins = Math.ceil(remaining/60000);
+    msg.textContent = 'Locked out — try again in '+mins+' min';
+    msg.style.color = '#ff6b6b';
+  } else {
+    btn.disabled = false; input.disabled = false;
+  }
+}
+function trySecretCode(){
+  if(secretCodeLockRemaining() > 0){ updateSecretCodeUI(); return; }
+  const input = document.getElementById('secretCodeInput');
+  const msg = document.getElementById('secretCodeMsg');
+  const val = input.value.trim();
+  if(val === SECRET_CODE){
+    save.coins += SECRET_REWARD;
+    save.codeLockoutUntil = 0;
+    saveGame();
+    updateCoinDisplays();
+    msg.textContent = 'Code accepted! +'+SECRET_REWARD.toLocaleString()+' coins';
+    msg.style.color = 'var(--lime)';
+    input.value = '';
+  } else {
+    save.codeLockoutUntil = Date.now() + 60*60*1000;
+    saveGame();
+    msg.textContent = 'Incorrect code. Locked out for 1 hour.';
+    msg.style.color = '#ff6b6b';
+    updateSecretCodeUI();
+  }
+}
+document.getElementById('secretCodeBtn').addEventListener('click', trySecretCode);
+document.getElementById('secretCodeInput').addEventListener('keydown', e=>{
+  if(e.code==='Enter') trySecretCode();
+});
+updateSecretCodeUI();
 
 /* ============================================================
    GOOGLE SIGN-IN
