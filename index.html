@@ -133,6 +133,11 @@
     font-family:'Archivo Black'; font-size:16px; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.8);
     background:rgba(10,10,16,.5); padding:8px 16px; border-radius:8px; white-space:nowrap;
   }
+  #spawnProtectionHint{
+    position:absolute; top:18%; left:50%; transform:translateX(-50%);
+    font-family:'Archivo Black'; font-size:13px; color:#c6ff2d; text-shadow:0 2px 6px rgba(0,0,0,.8);
+    background:rgba(10,10,16,.5); padding:6px 14px; border-radius:8px; white-space:nowrap;
+  }
   #crosshair::before, #crosshair::after{
     content:''; position:absolute; background:#fff; box-shadow:0 0 2px #000;
   }
@@ -629,6 +634,7 @@
 <div id="hud">
   <div id="crosshair"></div>
   <div id="skydiveHint" style="display:none;"></div>
+  <div id="spawnProtectionHint" style="display:none;">🛡️ SPAWN PROTECTION</div>
   <div id="hitmarker"></div>
   <div id="zoneVignette"></div>
   <div id="dmgFlash"></div>
@@ -784,7 +790,8 @@ const SKINS = [
   {id:'fernpixie', name:'Fern Pixie', cost:900, rarity:'Rare', vest:0x2f8f5a, legs:0x3a2a4a, arms:0x2f8f5a, helmet:'none', accessory:'cape', accent:0xff8fd0},
   {id:'widowsveil', name:"Widow's Veil", cost:1800, rarity:'Epic', vest:0x14141c, legs:0x0a0a10, arms:0x14141c, helmet:'cap', accessory:'cape', accent:0x8a7aa0},
   {id:'crimsonregent', name:'Crimson Regent', cost:3200, rarity:'Legendary', vest:0xb5182f, legs:0x8a1224, arms:0xb5182f, helmet:'none', accessory:'epaulettes', accent:0xd4af37},
-  {id:'lunarwisp', name:'Lunar Wisp', cost:4000, rarity:'Legendary', vest:0xc9b6ff, legs:0x9a86d9, arms:0xc9b6ff, helmet:'crown', accessory:'none', accent:0xf0e8ff}
+  {id:'lunarwisp', name:'Lunar Wisp', cost:4000, rarity:'Legendary', vest:0xc9b6ff, legs:0x9a86d9, arms:0xc9b6ff, helmet:'crown', accessory:'none', accent:0xf0e8ff},
+  {id:'timber', name:'Timber', cost:2000, rarity:'Rare', vest:0xd9b88a, legs:0xc9a87a, arms:0xd9b88a, helmet:'none', accessory:'none', accent:0xa8845a}
 ];
 const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d', Mythic:'#fff6c2' };
 
@@ -958,7 +965,7 @@ const MAPS = {
     medkitSpots:[{x:0,z:-6},{x:-24,z:0},{x:24,z:0},{x:0,z:24},{x:0,z:-24}]
   },
   battleroyale: {
-    name:'Battle Royale Beta', radius:100, buildingStyle:true, facadeStyle:'windows', skydive:true, brLoot:true,
+    name:'Battle Royale Beta', radius:130, buildingStyle:true, facadeStyle:'windows', skydive:true, brLoot:true,
     sky:0x8fc9ff, fog:0x8fc9ff, ground:0x8a9a7a, grid:0x6f7f60,
     ambient:0xf0f4ff, ambientI:0.9, sunI:1.1,
     boxes:[
@@ -975,24 +982,34 @@ const MAPS = {
       {x:38,z:48,w:4,d:4,h:2.5,c:0xff8659,plain:true},
       {x:63,z:-8,w:6,d:5,h:5,c:0x9a6a3a,style:'wood'},
       {x:70,z:-12,w:5,d:5,h:4,c:0x8a5a34,style:'wood'},
-      {x:66,z:2,w:4,d:4,h:3,c:0x8a5a34,style:'wood'}
+      {x:66,z:2,w:4,d:4,h:3,c:0x8a5a34,style:'wood'},
+      {x:0,z:-100,w:7,d:7,h:6,c:0x8a95a0},
+      {x:-6,z:98,w:6,d:6,h:16,c:0xff8fa3},
+      {x:6,z:100,w:7,d:7,h:12,c:0xffb066},
+      {x:-14,z:104,w:4,d:4,h:4,c:0xffd54d,plain:true},
+      {x:14,z:96,w:4,d:4,h:4,c:0xff6b8a,plain:true},
+      {x:92,z:46,w:5,d:5,h:4,c:0xd9cba8,plain:true}
     ],
     pillars:[
       {x:-38,z:-38,r:1.2,h:7,c:0xd48ecf},{x:-33,z:-46,r:1.2,h:7,c:0xd48ecf},
       {x:-46,z:-33,r:1.2,h:7,c:0xd48ecf},{x:-50,z:-42,r:1.2,h:7,c:0xd48ecf},
       {x:-42,z:-50,r:1.2,h:7,c:0xd48ecf},{x:-30,z:-30,r:1.2,h:7,c:0xd48ecf},
       {x:-25,z:-42,r:1.0,h:6,c:0xd48ecf},{x:-42,z:-25,r:1.0,h:6,c:0xd48ecf},
-      {x:-65,z:12,r:1.4,h:22,c:0x8a8f99}
+      {x:-65,z:12,r:1.4,h:22,c:0x8a8f99},
+      {x:-96,z:-36,r:1.0,h:5,c:0x6a7a5a},{x:-104,z:-38,r:1.0,h:5,c:0x6a7a5a},
+      {x:-92,z:-44,r:0.9,h:4,c:0x6a7a5a},{x:-100,z:-32,r:1.1,h:6,c:0x6a7a5a}
     ],
     trees:[
       {x:0,z:0},{x:15,z:15},{x:-15,z:-15},{x:20,z:-10},{x:-20,z:10},
-      {x:10,z:25},{x:-10,z:-25},{x:0,z:20},{x:0,z:-20},{x:25,z:0},{x:-25,z:0}
+      {x:10,z:25},{x:-10,z:-25},{x:0,z:20},{x:0,z:-20},{x:25,z:0},{x:-25,z:0},
+      {x:-98,z:-30},{x:-104,z:-32},{x:-94,z:-44},{x:-108,z:-38},{x:-90,z:-36},{x:-102,z:-50},
+      {x:88,z:52},{x:112,z:30}
     ],
     streetlights:[{x:47,z:-43},{x:40,z:-52}],
     lanterns:[{x:-48,z:44},{x:-46,z:50},{x:65,z:-4}],
     braziers:[{x:-40,z:-40},{x:-36,z:-34}],
     cacti:[{x:-48,z:50},{x:-36,z:40}],
-    medkitSpots:[{x:0,z:0},{x:47,z:-43},{x:-48,z:44},{x:-40,z:-40},{x:48,z:48},{x:30,z:-30},{x:-30,z:30},{x:0,z:50},{x:66,z:-8},{x:-65,z:16}],
+    medkitSpots:[{x:0,z:0},{x:47,z:-43},{x:-48,z:44},{x:-40,z:-40},{x:48,z:48},{x:30,z:-30},{x:-30,z:30},{x:0,z:50},{x:66,z:-8},{x:-65,z:16},{x:0,z:-100},{x:0,z:100},{x:100,z:40},{x:-100,z:-40}],
     chestSpots:[
       {x:44,z:-43},{x:50,z:-52},{x:38,z:-38},
       {x:-46,z:48},{x:-38,z:40},{x:-50,z:38},
@@ -1000,16 +1017,35 @@ const MAPS = {
       {x:46,z:46},{x:40,z:52},{x:50,z:44},
       {x:66,z:-6},{x:70,z:2},{x:60,z:-14},
       {x:-63,z:14},{x:-68,z:8},
+      {x:4,z:-96},{x:-4,z:-104},{x:8,z:-90},
+      {x:-2,z:96},{x:8,z:104},{x:-8,z:108},
+      {x:96,z:44},{x:98,z:34},{x:88,z:40},
+      {x:-96,z:-38},{x:-104,z:-42},{x:-90,z:-30},
       {x:0,z:5},{x:12,z:-15},{x:-12,z:18},{x:18,z:22}
     ],
     shieldPotSpots:[
       {x:44,z:-53},{x:-52,z:46},{x:-44,z:-46},{x:52,z:50},
       {x:65,z:0},{x:-65,z:20},
+      {x:0,z:-92},{x:0,z:106},{x:104,z:44},{x:-104,z:-36},
       {x:5,z:0},{x:-8,z:8},{x:15,z:0},{x:-15,z:5},{x:0,z:30},{x:0,z:-30}
     ],
     staticBouncePads:[
       {x:0,z:10},{x:0,z:-10},{x:35,z:-30},{x:-35,z:30},{x:20,z:35},{x:-20,z:-35}
     ],
+    barns:[{x:100,z:40}],
+    silos:[{x:106,z:38}],
+    fences:[
+      {x:100,z:30,length:16,rotY:0},{x:100,z:50,length:16,rotY:0},
+      {x:92,z:40,length:20,rotY:Math.PI/2},{x:108,z:40,length:20,rotY:Math.PI/2}
+    ],
+    palmTrees:[{x:-4,z:110},{x:6,z:114},{x:-10,z:106},{x:12,z:108}],
+    snowTrees:[{x:-6,z:-92},{x:8,z:-108},{x:-12,z:-100},{x:4,z:-90},{x:12,z:-98}],
+    caveEntrances:[{x:-9,z:-106,color:0x7a8088},{x:-106,z:-44,color:0x4a5a48}],
+    helipads:[{x:9,z:-95}],
+    ziplines:[{x1:0,z1:-100,h1:6,x2:10,z2:-112,h2:1}],
+    treehouses:[{x:-92,z:-48}],
+    waterPatches:[{x:-98,z:-52,size:7}],
+    sandPatches:[{x:0,z:112,size:12}],
     landingZones:[
       {x:47,z:-43},   // Downtown
       {x:-46,z:44},   // Frontier Camp
@@ -1017,6 +1053,10 @@ const MAPS = {
       {x:46,z:46},    // Sandlot Corner
       {x:66,z:-6},    // Trading Post
       {x:-65,z:14},   // Radio Tower
+      {x:0,z:-100},   // Storm Peaks
+      {x:0,z:100},    // Sunset City
+      {x:100,z:40},   // Frosty Farms
+      {x:-100,z:-40}, // Shadow Forest
       {x:15,z:15},{x:-15,z:-15},{x:20,z:-10},{x:-20,z:10},
       {x:10,z:25},{x:-10,z:-25},{x:0,z:20},{x:0,z:-20},{x:25,z:0},{x:-25,z:0},
       {x:0,z:0}
@@ -1859,6 +1899,21 @@ function tryMoveSteered(pos, dirX, dirZ, dist, radius, hardBoundary){
   }
   return false;
 }
+function unstickPosition(pos, radius){
+  for(const ob of obstacles){
+    if(pos.x+radius > ob.minX && pos.x-radius < ob.maxX && pos.z+radius > ob.minZ && pos.z-radius < ob.maxZ){
+      const pushLeft = (pos.x+radius) - ob.minX;
+      const pushRight = ob.maxX - (pos.x-radius);
+      const pushNear = (pos.z+radius) - ob.minZ;
+      const pushFar = ob.maxZ - (pos.z-radius);
+      const min = Math.min(pushLeft, pushRight, pushNear, pushFar);
+      if(min===pushLeft) pos.x = ob.minX - radius;
+      else if(min===pushRight) pos.x = ob.maxX + radius;
+      else if(min===pushNear) pos.z = ob.minZ - radius;
+      else pos.z = ob.maxZ + radius;
+    }
+  }
+}
 function hasLineOfSight(fromPos, toPos){
   const dir = new THREE.Vector3().subVectors(toPos, fromPos);
   const dist = dir.length();
@@ -2138,9 +2193,11 @@ function spawnEntities(){
     sprinting:false, sprintMeter:TAC_SPRINT_DURATION, sprintCooldown:0,
     velX:0, velZ:0,
     skydiving:false, skydiveState:'freefall', fallSpeed:0,
-    shield:0, bigShields:0, bouncePads:0, padCooldown:0
+    shield:0, bigShields:0, bouncePads:0, padCooldown:0,
+    spawnProtectionUntil:0
   };
   entities.push(player);
+  if(!currentMap.skydive) player.spawnProtectionUntil = performance.now() + 2000;
 
   if(currentMap.skydive){
     const dropSpot = currentMap.landingZones ? pickLandingSpot(Math.floor(Math.random()*currentMap.landingZones.length)) : randomSpawnPoint(currentMap.radius);
@@ -2155,7 +2212,7 @@ function spawnEntities(){
     const sp = pickLandingSpot(i);
     const botSkin = SKINS[Math.floor(Math.random()*SKINS.length)];
     const meshBundle = makeBotMesh(botSkin);
-    meshBundle.group.position.set(sp.x,0,sp.z);
+    meshBundle.group.position.set(sp.x, currentMap.skydive ? SKYDIVE_START_HEIGHT : 0, sp.z);
     const thisBotName = getBotName(i);
     const nameTag = makeNameSprite(thisBotName, 1);
     nameTag.position.y = 2.4;
@@ -2172,6 +2229,7 @@ function spawnEntities(){
       limbs:{armL:meshBundle.armL, armR:meshBundle.armR, legL:meshBundle.legL, legR:meshBundle.legR},
       animPhase: Math.random()*10,
       wanderTarget:null, name:thisBotName, kills:0, shield:0,
+      skydiving: !!currentMap.skydive, skydiveTimer: Math.random()*1.5,
       lastDamagedBy:null
     };
     meshBundle.body.userData.entityRef = bot;
@@ -2467,6 +2525,12 @@ function updateProjectiles(dt){
 
     if(hitPoint){
       pr.mesh.position.copy(hitPoint);
+      if(hitRef===player && performance.now() < player.spawnProtectionUntil){
+        // spawn protection active - player takes no damage, but the shot is still consumed/splats normally
+        spawnImpactFlash(hitPoint, pr.color);
+        removeProjectile(i);
+        continue;
+      }
       if(hitRef && (!mpActive || hitRef===player)){
         const dmgMult = (pr.ownerRef!==player && hitRef!==player) ? BOT_VS_BOT_DMG_MULT : 1;
         const rangeMult = rangeDamageMultiplier(pr.falloff, pr.traveled+hitDist, pr.maxDist);
@@ -2575,6 +2639,17 @@ function botPosition(ent){
 
 function updateBot(bot, dt, zoneR){
   if(!bot.alive) return;
+  if(bot.skydiving){
+    bot.skydiveTimer += dt;
+    const t = Math.min(1, bot.skydiveTimer / 6.5);
+    const eased = t<0.5 ? t*t*2 : 1-Math.pow(-2*t+2,2)/2;
+    bot.mesh.position.y = SKYDIVE_START_HEIGHT * (1-eased);
+    if(t >= 1){
+      bot.mesh.position.y = 0;
+      bot.skydiving = false;
+    }
+    return;
+  }
   const g = GUNS[bot.gunKey];
   const diff = DIFFICULTY_SETTINGS[selectedDifficulty-1];
   const myPos = bot.mesh.position;
@@ -2642,6 +2717,7 @@ function updateBot(bot, dt, zoneR){
   if(moveDir){
     const dist = BOT_SPEED*dt;
     const moved = tryMoveSteered(myPos, moveDir.x, moveDir.z, dist, BOT_RADIUS, currentMap.radius*1.5);
+    unstickPosition(myPos, BOT_RADIUS);
     if(!moved){
       bot.stuckTimer = (bot.stuckTimer||0) + dt;
       if(bot.stuckTimer > 0.6) bot.wanderTarget = null;
@@ -2935,6 +3011,7 @@ function landSkydive(){
   player.airOffset = 0;
   player.velocityY = 0;
   player.grounded = true;
+  player.spawnProtectionUntil = performance.now() + 2000;
   if(gliderMesh) gliderMesh.visible = false;
   const hint = document.getElementById('skydiveHint');
   if(hint) hint.style.display = 'none';
@@ -2942,6 +3019,7 @@ function landSkydive(){
 function updateSkydiveHUD(){
   const hint = document.getElementById('skydiveHint');
   if(!hint) return;
+  if(!player.skydiving){ hint.style.display = 'none'; return; }
   hint.style.display = 'block';
   const alt = Math.max(0, Math.round(camera.position.y));
   if(player.skydiveState==='freefall'){
@@ -3084,11 +3162,13 @@ function endMatch(won, killer){
     sub.textContent = killer ? `Eliminated by ${killer.name}` : 'Caught by the zone.';
   }
   const botsStillAlive = entities.filter(e=>!e.isPlayer && e.alive).length;
+  const placement = won ? 1 : botsStillAlive+1;
   document.getElementById('statTime').textContent = formatTime(matchElapsed);
   document.getElementById('statKills').textContent = player.kills;
-  document.getElementById('statPlace').textContent = won ? '#1' : ('#'+(botsStillAlive+1));
+  document.getElementById('statPlace').textContent = '#'+placement;
 
-  const coinsEarned = Math.round((20 + (won ? 75 : 0)) * currentCoinMult());
+  const placementMult = Math.max(0.3, 1 - (placement-1)/Math.max(1,selectedPlayerCount));
+  const coinsEarned = Math.round((20 + (won ? 75 : 0)) * currentCoinMult() * placementMult);
   save.coins += coinsEarned;
   saveGame();
   const coinEl = document.getElementById('statCoins');
@@ -3185,6 +3265,8 @@ function updateHUD(zoneState){
   clockEl.healthFill.style.background = hpPct>50 ? 'linear-gradient(90deg,#c6ff2d,#57e07a)' : (hpPct>20 ? 'linear-gradient(90deg,#ffcf2d,#ff9d2d)' : 'linear-gradient(90deg,#ff4d4d,#ff2d2d)');
 
   const isBRMode = currentMap && currentMap.brLoot;
+  const spawnProtEl = document.getElementById('spawnProtectionHint');
+  if(spawnProtEl) spawnProtEl.style.display = (performance.now() < player.spawnProtectionUntil) ? 'block' : 'none';
   if(isBRMode){
     clockEl.shieldBarBg.style.display = 'block';
     clockEl.shieldFill.style.width = Math.max(0,player.shield)+'%';
@@ -3338,6 +3420,7 @@ function animate(){
         const pos = camera.position;
         tryMove(pos, player.velX*dt, player.velZ*dt, PLAYER_RADIUS, currentMap.radius*1.5);
       }
+      unstickPosition(camera.position, PLAYER_RADIUS);
       // gravity / jump
       player.velocityY -= GRAVITY*dt;
       player.airOffset += player.velocityY*dt;
