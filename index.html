@@ -791,7 +791,7 @@ const SKINS = [
   {id:'widowsveil', name:"Widow's Veil", cost:1800, rarity:'Epic', vest:0x14141c, legs:0x0a0a10, arms:0x14141c, helmet:'cap', accessory:'cape', accent:0x8a7aa0},
   {id:'crimsonregent', name:'Crimson Regent', cost:3200, rarity:'Legendary', vest:0xb5182f, legs:0x8a1224, arms:0xb5182f, helmet:'none', accessory:'epaulettes', accent:0xd4af37},
   {id:'lunarwisp', name:'Lunar Wisp', cost:4000, rarity:'Legendary', vest:0xc9b6ff, legs:0x9a86d9, arms:0xc9b6ff, helmet:'crown', accessory:'none', accent:0xf0e8ff},
-  {id:'timber', name:'Timber', cost:2000, rarity:'Rare', vest:0xd9b88a, legs:0xc9a87a, arms:0xd9b88a, helmet:'none', accessory:'none', accent:0xa8845a}
+  {id:'timber', name:'Timber', cost:2000, rarity:'Rare', vest:0xd9b88a, legs:0xc9a87a, arms:0xd9b88a, helmet:'none', accessory:'none', accent:0xa8845a, headColor:0xe86fa8}
 ];
 const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d', Mythic:'#fff6c2' };
 
@@ -1935,7 +1935,7 @@ function buildMannequinVisual(skin){
   const vestMat = skin.torsoTexture
     ? new THREE.MeshStandardMaterial({map:new THREE.TextureLoader().load(skin.torsoTexture), ...matteOpts})
     : (skin.shiny ? new THREE.MeshStandardMaterial({color:skin.vest, ...shinyOpts}) : new THREE.MeshStandardMaterial({color:skin.vest, ...matteOpts}));
-  const headMat = new THREE.MeshStandardMaterial({color: skin.helmet==='llamahead' ? (skin.accent||0xc9a8e0) : 0xffe0c2, roughness:0.7, metalness:0});
+  const headMat = new THREE.MeshStandardMaterial({color: skin.helmet==='llamahead' ? (skin.accent||0xc9a8e0) : (skin.headColor||0xffe0c2), roughness:0.7, metalness:0});
   const accentMat = new THREE.MeshBasicMaterial({color:skin.accent||0xffffff});
   const trimMat = skin.shiny ? new THREE.MeshStandardMaterial({color:skin.accent||skin.vest, ...shinyOpts}) : new THREE.MeshStandardMaterial({color:skin.accent||skin.vest, ...matteOpts});
 
