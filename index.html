@@ -792,7 +792,18 @@ const SKINS = [
   {id:'widowsveil', name:"Widow's Veil", cost:1800, rarity:'Epic', vest:0x14141c, legs:0x0a0a10, arms:0x14141c, helmet:'cap', accessory:'cape', accent:0x8a7aa0},
   {id:'crimsonregent', name:'Crimson Regent', cost:3200, rarity:'Legendary', vest:0xb5182f, legs:0x8a1224, arms:0xb5182f, helmet:'none', accessory:'epaulettes', accent:0xd4af37},
   {id:'lunarwisp', name:'Lunar Wisp', cost:4000, rarity:'Legendary', vest:0xc9b6ff, legs:0x9a86d9, arms:0xc9b6ff, helmet:'crown', accessory:'none', accent:0xf0e8ff},
-  {id:'timber', name:'Timber', cost:2000, rarity:'Rare', vest:0xd9b88a, legs:0xc9a87a, arms:0xd9b88a, helmet:'none', accessory:'none', accent:0xa8845a, headColor:0xe86fa8}
+  {id:'timber', name:'Timber', cost:2000, rarity:'Rare', vest:0xd9b88a, legs:0xc9a87a, arms:0xd9b88a, helmet:'none', accessory:'none', accent:0xa8845a, headColor:0xe86fa8},
+  {id:'adventurer', name:'Adventurer', cost:2500, rarity:'Epic', vest:0x8a6a4a, legs:0x5a4a3a, arms:0x8a6a4a, helmet:'none', accessory:'none', accent:0xc9a87a, model:'skins/adventurer.glb'},
+  {id:'astronaut', name:'Astronaut', cost:3500, rarity:'Legendary', vest:0xe8e8f0, legs:0xd0d0dc, arms:0xe8e8f0, helmet:'none', accessory:'none', accent:0xff9d3d, model:'skins/astronaut.glb'},
+  {id:'beachchar', name:'Beach Character', cost:2000, rarity:'Rare', vest:0xffd54d, legs:0x4a9ec9, arms:0xffd54d, helmet:'none', accessory:'none', accent:0xff6b8a, model:'skins/beach_character.glb'},
+  {id:'businessman', name:'Business Man', cost:2000, rarity:'Rare', vest:0x2a2a38, legs:0x1a1a22, arms:0x2a2a38, helmet:'none', accessory:'none', accent:0xd4af37, model:'skins/business_man.glb'},
+  {id:'casualchar', name:'Casual Character', cost:1500, rarity:'Common', vest:0x4a90d9, legs:0x3a3a48, arms:0x4a90d9, helmet:'none', accessory:'none', accent:0xffffff, model:'skins/casual_character.glb'},
+  {id:'farmer', name:'Farmer', cost:1800, rarity:'Rare', vest:0x8a5a34, legs:0x4a6a8a, arms:0x8a5a34, helmet:'none', accessory:'none', accent:0xe8d5a3, model:'skins/farmer.glb'},
+  {id:'hoodiechar', name:'Hoodie Character', cost:2000, rarity:'Rare', vest:0x3a3a48, legs:0x2a2a38, arms:0x3a3a48, helmet:'none', accessory:'none', accent:0xc6ff2d, model:'skins/hoodie_character.glb'},
+  {id:'king', name:'King', cost:5000, rarity:'Legendary', vest:0x7a2a8a, legs:0x4a1a5a, arms:0x7a2a8a, helmet:'none', accessory:'none', accent:0xd4af37, model:'skins/king.glb'},
+  {id:'punk', name:'Punk', cost:2500, rarity:'Epic', vest:0x1a1a22, legs:0x2a2a2a, arms:0x1a1a22, helmet:'none', accessory:'none', accent:0xff2d78, model:'skins/punk.glb'},
+  {id:'swat', name:'Swat', cost:3000, rarity:'Epic', vest:0x2a2a2a, legs:0x1a1a1a, arms:0x2a2a2a, helmet:'none', accessory:'none', accent:0x3a9e4a, model:'skins/swat.glb'},
+  {id:'worker', name:'Worker', cost:1500, rarity:'Common', vest:0xff9d3d, legs:0x4a4a4a, arms:0xff9d3d, helmet:'none', accessory:'none', accent:0xffd54d, model:'skins/worker.glb'}
 ];
 const RARITY_COLORS = { Common:'#9ca3af', Rare:'#4d9fff', Epic:'#b14dff', Legendary:'#ffd54d', Mythic:'#fff6c2' };
 
@@ -1417,6 +1428,31 @@ function tryUpgradeToModel(modelFile, fallbackMeshes, x, z, scale, rotY){
     modelLoadStatus[path] = 'ok';
     modelCache[path] = gltf.scene;
     applyModel(gltf.scene);
+  }, undefined, ()=>{ modelLoadStatus[path] = 'failed'; });
+}
+function loadCharacterModel(modelFile, parentGroup){
+  const path = MODEL_BASE_PATH + modelFile;
+  const applyToMannequin = (sourceScene) => {
+    const instance = sourceScene.clone();
+    const box = new THREE.Box3().setFromObject(instance);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const targetHeight = 1.8;
+    const scale = size.y > 0.001 ? targetHeight/size.y : 1;
+    instance.scale.setScalar(scale);
+    const box2 = new THREE.Box3().setFromObject(instance);
+    instance.position.y -= box2.min.y;
+    instance.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
+    parentGroup.add(instance);
+    // hide the primitive placeholder parts (limb pivots keep animating harmlessly underneath, just invisible)
+    parentGroup.children.forEach(child=>{ if(child !== instance) child.visible = false; });
+  };
+  if(modelLoadStatus[path] === 'ok'){ applyToMannequin(modelCache[path]); return; }
+  if(modelLoadStatus[path] === 'failed') return;
+  gltfLoader.load(path, (gltf)=>{
+    modelLoadStatus[path] = 'ok';
+    modelCache[path] = gltf.scene;
+    applyToMannequin(gltf.scene);
   }, undefined, ()=>{ modelLoadStatus[path] = 'failed'; });
 }
 function addBuildingObstacle(x,z,w,d,h,color,style){
@@ -2145,6 +2181,9 @@ function buildMannequinVisual(skin){
   }
 
   group.traverse(obj=>{ if(obj.isMesh){ obj.castShadow = true; obj.receiveShadow = true; } });
+  if(skin.model){
+    loadCharacterModel(skin.model, group);
+  }
   return {group, head, torso, armL, armR, legL, legR};
 }
 
